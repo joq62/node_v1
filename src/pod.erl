@@ -26,7 +26,7 @@
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% --------------------------------------------------------------------
-load_start(Node,ClusterId,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppEnv,_AppHosts})->
+load_start(Node,ClusterId,MonitorNode,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppEnv,_AppHosts})->
     % clone application 
     PathApp=filename:join([ClusterId,AppId]),
     rpc:call(Node,os,cmd,["rm -rf "++PathApp],5*1000),
@@ -37,11 +37,17 @@ load_start(Node,ClusterId,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppEnv,_AppHosts
     Ebin=filename:join(PathApp,"ebin"),
     rpc:call(Node,code,add_patha,[Ebin],5*1000),
     App=list_to_atom(AppId),
-    NewAppEnv=lists:append([{kubelet,[{cluster_id,ClusterId}]}],AppEnv),
+    NewAppEnv=lists:append([{kubelet,[{monitor_node,MonitorNode},{cluster_id,ClusterId}]}],AppEnv),
     %?PrintLog(debug,"NewAppEnv",[?MODULE,?LINE,NewAppEnv]),
     SetEnvResult=rpc:call(Node,application,set_env,[NewAppEnv],5*1000),
     %?PrintLog(debug,"SetEnvResult",[?MODULE,?LINE,SetEnvResult]),
-    ok=rpc:call(Node,application,start,[App],20*1000),
+    case rpc:call(Node,application,start,[App],20*1000) of
+	ok->
+	    ok;
+	Reason->
+	    ?PrintLog(ticket,"error",[Reason,Node,ClusterId,App,?FUNCTION_NAME,?MODULE,?LINE])
+    end,
+	
     % Check if started
     Apps=rpc:call(Node,application,which_applications,[],5*1000),
     true=lists:keymember(App,1,Apps),
