@@ -27,7 +27,8 @@
 %% Returns: non
 %% --------------------------------------------------------------------
 load_start(Node,ClusterId,MonitorNode,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppEnv,_AppHosts})->
-    % clone application 
+  %   ?PrintLog(debug,"1 Cookie pod:load_start ",[rpc:call(Node,erlang,get_cookie,[]),Node,?FUNCTION_NAME,?MODULE,?LINE]),
+			 % clone application 
     PathApp=filename:join([ClusterId,AppId]),
     rpc:call(Node,os,cmd,["rm -rf "++PathApp],5*1000),
     ok=rpc:call(Node,file,make_dir,[PathApp],5*1000),
@@ -39,11 +40,25 @@ load_start(Node,ClusterId,MonitorNode,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppE
     App=list_to_atom(AppId),
     NewAppEnv=lists:append([{kubelet,[{monitor_node,MonitorNode},{cluster_id,ClusterId}]}],AppEnv),
     %?PrintLog(debug,"NewAppEnv",[?MODULE,?LINE,NewAppEnv]),
+    AgainCookie=erlang:get_cookie(),
+    rpc:call(Node,erlang,set_cookie,[Node,AgainCookie],5*1000),
+  %   ?PrintLog(debug,"AgainCookie ",[AgainCookie,?FUNCTION_NAME,?MODULE,?LINE]),
+%     ?PrintLog(debug,"2 Cookie pod:load_start ",[rpc:call(Node,erlang,get_cookie,[]),Node,?FUNCTION_NAME,?MODULE,?LINE]),
     SetEnvResult=rpc:call(Node,application,set_env,[NewAppEnv],5*1000),
+ %    ?PrintLog(debug,"3 Cookie pod:load_start ",[rpc:call(Node,erlang,get_cookie,[]),Node,NewAppEnv,?FUNCTION_NAME,?MODULE,?LINE]),
     %?PrintLog(debug,"SetEnvResult",[?MODULE,?LINE,SetEnvResult]),
     case rpc:call(Node,application,start,[App],20*1000) of
 	ok->
-	    ok;
+	    AgainCookie=erlang:get_cookie(),
+	    NodeCookie=rpc:call(Node,erlang,get_cookie,[],5*1000),
+	    case AgainCookie==NodeCookie of
+		true->
+		    ok;
+		false->
+	    	    rpc:call(Node,erlang,set_cookie,[Node,AgainCookie],5*1000),
+		    ?PrintLog(ticket,"Needed to re-set cookie ",[NodeCookie, AgainCookie,Node,?FUNCTION_NAME,?MODULE,?LINE]),
+		    ok	
+	    end;
 	Reason->
 	    ?PrintLog(ticket,"error",[Reason,Node,ClusterId,App,?FUNCTION_NAME,?MODULE,?LINE])
     end,
