@@ -57,13 +57,13 @@
 %% --------------------------------------------------------------------
 init_dbase()->
     %Start stop mnesia
-    mnesia:stop(),
-    mnesia:delete_schema([node()]),
-    mnesia:start(),
+  %  mnesia:stop(),
+  %  mnesia:delete_schema([node()]),
+  %  mnesia:start(),
 
     % Init dbase
-    ok=init_cluster_info(),
-    ok=init_host_info(),
+  %  ok=init_cluster_info(),
+  %  ok=init_host_info(),
     ok=init_pod_specs(),
     ok.
     

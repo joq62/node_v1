@@ -225,7 +225,8 @@ handle_cast({log_msg,Info}, State) ->
 	    ok;
 	Node->
 	    rpc:cast(Node,monitor,print,[Info]),
-	    rpc:cast(Node,kubelet_server,log_to_file,[Info])
+	 %   rpc:cast(Node,kubelet_server,log_to_file,[Info])
+	    log_to_file(Info)
     end,
     
 %    io:format("Info ~w~n",[Info]),
