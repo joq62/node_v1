@@ -27,8 +27,7 @@
 %% Key Data structures
 %% 
 %% --------------------------------------------------------------------
--record(state, {event_ref,file_descriptor,
-		monitor_node}).
+-record(state, {}).
 
 
 
@@ -84,9 +83,7 @@
 %
 %% --------------------------------------------------------------------
 init([]) ->
-    {ok,MonitorNode}=application:get_env(monitor_node),
-
-    {ok, #state{monitor_node=MonitorNode}}.
+    {ok, #state{}}.
     
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -98,12 +95,6 @@ init([]) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (aterminate/2 is called)
 %% --------------------------------------------------------------------
-
-
-
-handle_call({add_monitor,Node},_From,State) ->
-    {reply,ok, State#state{monitor_node=Node}};
-
 handle_call({ping},_From,State) ->
     Reply={pong,node(),?MODULE},
     {reply, Reply, State};
@@ -122,36 +113,19 @@ handle_call(Request, From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% -------------------------------------------------------------------
-handle_cast({file,FileSeverity,Info}, State) ->
-    gen_event:notify(State#state.event_ref,{FileSeverity,State#state.file_descriptor,Info}),
-    {noreply, State};
-    
-handle_cast({kube_log,Info}, State) ->
-%    DbaseInfo=?LoggerDbase(Sev
-%    rpc:call(node(),db_logger,create,[M),
-%    gen_event:notify(State#state.event_ref,{Severity,Info}),
-%    case State#state.monitor_node of
-%	node_defined->
-%	    ok;
-%	Node->
-%	    rpc:call(Node,monitor,print,[Severity,Info])
- %   end,
-    io:format("Info ~p~n",[Info]),
-    {noreply, State};
-
 handle_cast({print_type,Type}, State) ->
     logger_print:print_type(Type,?Latest),
     {noreply, State};
 
 handle_cast({log_msg,Info}, State) ->
-  % io:format("log_msg,Info ~n"),
-    case State#state.monitor_node of
-	node_defined->
+ %  io:format("Info ~p~n",[Info]),
+    case application:get_env(kubelet,monitor_node) of
+	undefined->
 	    ok;
 	Node->
-%	    io:format("Node ~w~n",[Node]),
-%	    io:format("Info ~w~n",[Info]),
 	    rpc:cast(Node,monitor,print,[Info])
+	 %   rpc:cast(Node,kubelet_server,log_to_file,[Info])
+	 
     end,
     log_to_file(Info),
 %    io:format("Info ~w~n",[Info]),
@@ -208,8 +182,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% Description:
 %% Returns: non
 %% --------------------------------------------------------------------
-
-
 log_to_file(Info)->
     case filelib:is_dir(?LogDir) of
 	false->

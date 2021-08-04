@@ -42,8 +42,8 @@ load_start(Node,ClusterId,MonitorNode,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppE
     App=list_to_atom(AppId),
     NewAppEnv=lists:append([{kubelet,[{monitor_node,MonitorNode},{cluster_id,ClusterId}]}],AppEnv),
     %?PrintLog(debug,"NewAppEnv",[?MODULE,?LINE,NewAppEnv]),
-    AgainCookie=erlang:get_cookie(),
-    rpc:call(Node,erlang,set_cookie,[Node,AgainCookie],5*1000),
+ %   AgainCookie=erlang:get_cookie(),
+  %  rpc:call(Node,erlang,set_cookie,[Node,AgainCookie],5*1000),
   %   ?PrintLog(debug,"AgainCookie ",[AgainCookie,?FUNCTION_NAME,?MODULE,?LINE]),
 %     ?PrintLog(debug,"2 Cookie pod:load_start ",[rpc:call(Node,erlang,get_cookie,[]),Node,?FUNCTION_NAME,?MODULE,?LINE]),
     SetEnvResult=rpc:call(Node,application,set_env,[NewAppEnv],5*1000),
@@ -55,9 +55,10 @@ load_start(Node,ClusterId,MonitorNode,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppE
 	    NodeCookie=rpc:call(Node,erlang,get_cookie,[],5*1000),
 	    case AgainCookie==NodeCookie of
 		true->
+		    ?PrintLog(debug,"cookie ok ",[NodeCookie, AgainCookie,Node,?FUNCTION_NAME,?MODULE,?LINE]),
 		    ok;
 		false->
-	    	    rpc:call(Node,erlang,set_cookie,[Node,AgainCookie],5*1000),
+		    rpc:call(Node,erlang,set_cookie,[Node,AgainCookie],5*1000),
 		    ?PrintLog(ticket,"Needed to re-set cookie ",[NodeCookie, AgainCookie,Node,?FUNCTION_NAME,?MODULE,?LINE]),
 		    ok	
 	    end;
@@ -67,8 +68,14 @@ load_start(Node,ClusterId,MonitorNode,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppE
 	
     % Check if started
     Apps=rpc:call(Node,application,which_applications,[],5*1000),
-    true=lists:keymember(App,1,Apps),
-    ok.
+    case lists:keymember(App,1,Apps) of
+	true->
+	    ok;
+	false->
+	    ?PrintLog(ticket,"App not started  ",[App,Node,Apps,?FUNCTION_NAME,?MODULE,?LINE]),
+	    {error,[ticket,"App not started  ",[App,Node,Apps,?FUNCTION_NAME,?MODULE,?LINE]]}
+	 
+    end.
 
 stop_unload(Node,ClusterId,{_PodId,_PodVsn,AppId,_AppVsn,_GitPath,_AppEnv,_AppHosts})->
     App=list_to_atom(AppId),
