@@ -122,7 +122,7 @@ handle_cast({log_msg,Info}, State) ->
     case application:get_env(kubelet,monitor_node) of
 	undefined->
 	    ok;
-	Node->
+	{ok,Node}->
 	    rpc:cast(Node,monitor,print,[Info])
 	 %   rpc:cast(Node,kubelet_server,log_to_file,[Info])
 	 
