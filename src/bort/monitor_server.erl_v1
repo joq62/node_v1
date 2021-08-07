@@ -25,7 +25,7 @@
 %% Definitions 
 %% --------------------------------------------------------------------
 
--export([]).
+-export([nice/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3,handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -144,3 +144,34 @@ code_change(_OldVsn, State, _Extra) ->
 %% Description:
 %% Returns: non
 %% --------------------------------------------------------------------
+%% Time       Date         Id   Severity      App     Module      Info
+%% 100721 05:33:45 12312312313 ticket kube_logger monitor badrpc nodedown  
+%%
+%% 10/07-21|123123434223|ticket|kube_logger    |longNAmF|badrpc nodedown   
+%% 10/07-21|123123166532|log   |servic1        |module1 |badrpc nodedown 
+%% 10/07-21|123123245764|alert |standrad_lib_al|log     |badrpc nodedown 
+%{alert,
+% {2021,7,20},
+%       {15,38,23},
+%       'test_mylog@joq62-X550CA',undefined,mylog_test,pass_0,100,"a1"}
+
+nice({Severity,{Y2,M,D},{H,Min,S},
+      Node,Application,Module,Fun,Line,Info})->
+    Y=Y2-2000,
+    {Y1,M1,D1}={integer_to_list(Y),integer_to_list(M),integer_to_list(D)},
+    {H1,Min1,S1}={integer_to_list(H),integer_to_list(Min),integer_to_list(S)}, 
+    DateTime=H1++":"++Min1++":"++S1++" "++D1++"/"++M1++"-"++Y1,
+    Severity1=atom_to_list(Severity),
+    Node1=atom_to_list(Node),
+    App1=atom_to_list(Application),
+    Module1=atom_to_list(Module),
+    Fun1=atom_to_list(Fun),
+    Line1=integer_to_list(Line),
+
+    Msg=DateTime++" | "++Severity1++" | "++Node1++" | "++App1++"| "++Module1++"| "++Fun1++" | "++Line1+
+ 
++" | "++Info,
+    io:format("~p~n",[Msg]), 
+    io:format("~-16s ~-7s ~-25s ~-10s ~-15s ~-15s ~-4s ~s ~n",[DateTime,Severity1,Node1,App1,Module1,Fun1,Line1,Info]),
+    ok.
+ 

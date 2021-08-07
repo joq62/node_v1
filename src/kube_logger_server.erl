@@ -46,7 +46,7 @@
 
 
 
-
+-export([nice/1]).
 
 % OaM related
 
@@ -264,8 +264,8 @@ nice({Severity,{Y2,M,D},{H,Min,S},
     Fun1=atom_to_list(Fun),
     Line1=integer_to_list(Line),
 
-    _Msg=DateTime++" | "++Severity1++" | "++Node1++" | "++App1++"| "++Module1++"| "++Fun1++" | "++Line1++" | "++Info,
- %   io:format("~p~n",[Msg]), 
+    Msg=DateTime++" | "++Severity1++" | "++Node1++" | "++App1++"| "++Module1++"| "++Fun1++" | "++Line1++" | "++Info,
+    io:format("~p~n",[Msg]), 
     io:format("~-16s ~-7s ~-25s ~-10s ~-15s ~-15s ~-4s ~s ~n",[DateTime,Severity1,Node1,App1,Module1,Fun1,Line1,Info]),
     ok.
  

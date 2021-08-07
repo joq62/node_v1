@@ -87,105 +87,6 @@ init([]) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (aterminate/2 is called)
 %% --------------------------------------------------------------------
-handle_call({add_monitor,Node},_From,State) ->
-    {reply,ok, State#state{monitor_node=Node}};
-
-handle_call({get_state},_From,State) ->
-    Reply=State,
-    {reply, Reply, State};
-
-handle_call({get_pods},_From,State) ->
-    Reply=State#state.pods,
-    {reply, Reply, State};
-
-handle_call({create_pod,PodId},_From,State) ->
-    Reply=case db_pod_spec:read(PodId) of
-	      []->
-		  ?PrintLog(ticket,"pod eexist",[PodId]),
-		  NewState=State;
-	      [PodSpec]->
-		  ClusterId=State#state.cluster_id,
-		  MonitorNode=State#state.monitor_node,
-		  case rpc:call(node(),pod,load_start,[ClusterId,MonitorNode,PodSpec]) of
-		      ok->
-			  ?PrintLog(log,"pod started",[PodId]),
-			  PodList=State#state.pods,
-			  NewPods=[PodId|PodList],
-			  NewState=State#state{pods=NewPods},
-			  ok;
-		      Reason->
-			  ?PrintLog(ticket,"pod couldnt be started",[PodId,Reason]),
-			  NewState=State
-		  end
-	  end,
-    {reply, Reply, NewState};
-
-handle_call({delete_pod,PodId},_From,State) ->
-    Reply=case db_pod_spec:read(PodId) of
-	      []->
-		  ?PrintLog(ticket,"pod eexist",[PodId]),
-		  NewState=State;
-	      [PodSpec]->
-		  case lists:keymember(PodId,1,State#state.pods) of
-		      true->
-			  ClusterId=State#state.cluster_id,
-			  ?PrintLog(log,"pod deleted",[PodId]),
-			  PodsList=lists:keydelete(PodId,1,State#state.pods),
-			  NewState=State#state{pods=PodsList},
-			  rpc:call(node(),pod,stop_unload,[ClusterId,PodSpec]);
-		      false->
-			  NewState=State,
-			  ?PrintLog(ticket,"pod eexist",[PodId]),
-			  {error,[eexists,PodId]}
-		  end
-	  end,
-    {reply, Reply,NewState};
-
-
-handle_call({create_pod,PodName,Spec},_From,State) ->
-    PodId=rpc:call(node(),pod,create,[PodName,Spec]),
-    Reply=PodId,
-    {reply, Reply, State};
-
-
-
-handle_call({add_pod_spec,PodName,Spec},_From,State) ->
-    Reply=glurk,
-    {reply, Reply, State};
-handle_call({delete_pod_spec,PodName},_From,State) ->
-    Reply=glurk,
-    {reply, Reply, State};
-
-
-handle_call({start_slaves,HostId,SlaveNames,ErlCmd},_From,State) ->
-    Master=list_to_atom("master"++"@"++HostId),
-    Reply=rpc:call(node(),cluster_lib,start_slaves,[Master,HostId,SlaveNames,ErlCmd],2*5000),
-    {reply, Reply, State};
-
-
-handle_call({read_config},_From,State) ->
-    Reply=glurk,
-    {reply, Reply, State};
-
-handle_call({load_config},_From,State) ->
-    Reply=glurk,
-    {reply, Reply, State};
-
-
-handle_call({install},_From,State) ->
-    Reply=rpc:call(node(),cluster_lib,install,[],2*5000),
-    {reply, Reply, State};
-
-
-handle_call({start_app,ApplicationStr,Application,CloneCmd,Dir,Vm},_From,State) ->
-    Reply=cluster_lib:start_app(ApplicationStr,Application,CloneCmd,Dir,Vm),
-    {reply, Reply, State};
-handle_call({stop_app,ApplicationStr,Application,Dir,Vm},_From,State) ->
-    Reply=cluster_lib:stop_app(ApplicationStr,Application,Dir,Vm),
-    {reply, Reply, State};
-handle_call({app_status,Vm,Application},_From,State) ->
-    Reply=cluster_lib:app_status(Vm,Application),
-    {reply, Reply, State};
 
 handle_call({ping},_From,State) ->
     Reply={pong,node(),?MODULE},
@@ -205,11 +106,6 @@ handle_call(Request, From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% -------------------------------------------------------------------
-handle_cast({print,{Date,Time,Node,Type,Msg,InfoList}}, State) ->
-  io:format("~s: ~w, , ~w, ~s, ~p, ~n",
-	    [misc_fun:date_time(Date,Time),Node,Type,Msg,InfoList]),
-    {noreply, State};
-
 handle_cast(Msg, State) ->
     io:format("unmatched match cast ~p~n",[{?MODULE,?LINE,Msg}]),
     {noreply, State}.
