@@ -83,6 +83,7 @@
 %
 %% --------------------------------------------------------------------
 init([]) ->
+ 
     {ok, #state{}}.
     
 %% --------------------------------------------------------------------
@@ -221,8 +222,8 @@ write_info({Date,Time,Node,Type,Msg,InfoList})->
 	    end
     end,
     {ok,S}=file:open(LogFile,[append]),
-	io:format(S,"~p.~n",
-		  [{Date,Time,Node,Type,Msg,InfoList}]),
+    io:format(S,"~p.~n",
+	      [{Date,Time,Node,Type,Msg,InfoList}]),
     file:close(S).
 
 remove_oldest_log(FileNames)->

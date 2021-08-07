@@ -71,7 +71,6 @@ init([]) ->
     {ok,_}=kube_logger:start(),
     {ok,ClusterId}=application:get_env(cluster_id),
     {ok,MonitorNode}=application:get_env(monitor_node),
-    kubelet_lib:init_dbase(),
     ?PrintLog(log,"Successful starting of server",[?MODULE]),
     ?PrintLog(debug,"Cookie",[erlang:get_cookie(),node(),?FUNCTION_NAME,?MODULE,?LINE]),
     {ok, #state{cluster_id=ClusterId,

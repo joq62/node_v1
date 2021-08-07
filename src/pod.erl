@@ -29,7 +29,7 @@
 %% Returns: non
 %% --------------------------------------------------------------------
 load_start(Node,ClusterId,MonitorNode,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppEnv,_AppHosts})->
-  %   ?PrintLog(debug,"1 Cookie pod:load_start ",[rpc:call(Node,erlang,get_cookie,[]),Node,?FUNCTION_NAME,?MODULE,?LINE]),
+ %   ?PrintLog(debug,"1  pod:load_start ",[Node,ClusterId,MonitorNode,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppEnv,_AppHosts},?FUNCTION_NAME,?MODULE,?LINE]),
 			 % clone application 
     PathApp=filename:join([ClusterId,AppId]),
     rpc:call(Node,os,cmd,["rm -rf "++PathApp],5*1000),
@@ -70,7 +70,7 @@ load_start(Node,ClusterId,MonitorNode,{_PodId,_PodVsn,AppId,_AppVsn,GitPath,AppE
     Apps=rpc:call(Node,application,which_applications,[],5*1000),
     case lists:keymember(App,1,Apps) of
 	true->
-	    ok;
+	    {ok,App,Node};
 	false->
 	    ?PrintLog(ticket,"App not started  ",[App,Node,Apps,?FUNCTION_NAME,?MODULE,?LINE]),
 	    {error,[ticket,"App not started  ",[App,Node,Apps,?FUNCTION_NAME,?MODULE,?LINE]]}
