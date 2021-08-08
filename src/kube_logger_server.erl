@@ -27,14 +27,17 @@
 %% Key Data structures
 %% 
 %% --------------------------------------------------------------------
--record(state, {}).
+-record(state, {log_files_dir,
+		log_file
+	       }).
 
 
 
 %% --------------------------------------------------------------------
 %% Definitions 
 %% --------------------------------------------------------------------
--define(LogDir,"logs").
+-define(LogDirName,"logs").
+-define(LogFileName,"latest.log").
 -define(Latest,filename:join(?LogDir,"latest.log")).
 
 
@@ -83,8 +86,13 @@
 %
 %% --------------------------------------------------------------------
 init([]) ->
- 
-    {ok, #state{}}.
+   {ok,ClusterIdAtom}=application:get_env(cluster_id),
+    ClusterId=atom_to_list(ClusterIdAtom),
+    LogFilesDir=filename:join([ClusterId,?LogDirName]),
+    LogFile=filename:join([ClusterId,?LogDirName,?LogFileName]),
+    {ok,_}=monitor:start(),
+    {ok, #state{log_files_dir=LogFilesDir,
+		log_file=LogFile}}.
     
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -115,7 +123,7 @@ handle_call(Request, From, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% -------------------------------------------------------------------
 handle_cast({print_type,Type}, State) ->
-    logger_print:print_type(Type,?Latest),
+    logger_print:print_type(Type,State#state.log_file),
     {noreply, State};
 
 handle_cast({log_msg,Info}, State) ->
@@ -125,10 +133,12 @@ handle_cast({log_msg,Info}, State) ->
 	    ok;
 	{ok,Node}->
 	    rpc:cast(Node,monitor,print,[Info])
-	 %   rpc:cast(Node,kubelet_server,log_to_file,[Info])
+	    %   rpc:cast(Node,kubelet_server,log_to_file,[Info])
 	 
     end,
-    log_to_file(Info),
+    LogFilesDir=State#state.log_files_dir,
+    LogFile=State#state.log_file,
+    log_to_file(Info,LogFilesDir,LogFile),
 %    io:format("Info ~w~n",[Info]),
     {noreply, State};
 
@@ -183,19 +193,18 @@ code_change(_OldVsn, State, _Extra) ->
 %% Description:
 %% Returns: non
 %% --------------------------------------------------------------------
-log_to_file(Info)->
-    case filelib:is_dir(?LogDir) of
+log_to_file(Info,LogFilesDir,LogFile)->
+    case filelib:is_dir(LogFilesDir) of
 	false->
-	    file:make_dir(?LogDir),
-	    write_info(Info);
+	    file:make_dir(LogFilesDir);
 	true ->
-	    write_info(Info)
+	    ok
     end,
+    write_info(Info,LogFilesDir,LogFile),
     ok.
 
 
-write_info({Date,Time,Node,Type,Msg,InfoList})->
-    LogFile=?Latest,
+write_info({Date,Time,Node,Type,Msg,InfoList},LogFilesDir,LogFile)->
     case file:read_file_info(LogFile) of
 	{error,_Reason}->
 	    ok;
@@ -205,15 +214,15 @@ write_info({Date,Time,Node,Type,Msg,InfoList})->
 %		1*1000<FileInfo#file_info.size->
 		    F1=integer_to_list(erlang:system_time(millisecond)),
 		    F2=F1++".log",
-		    FileName=filename:join(?LogDir,F2),
+		    FileName=filename:join(LogFilesDir,F2),
 		    file:rename(LogFile,FileName),
 	      % max three log files;
-		    {ok,FileNames}=file:list_dir(?LogDir),
+		    {ok,FileNames}=file:list_dir(LogFilesDir),
 		    Num=lists:foldl(fun(_X,Num)->Num+1 end, 0,FileNames),
 		    io:format("FileNames ~p~n",[{Num,FileNames}]),
 		    if 
 			3<Num->
-			    remove_oldest_log(FileNames); 
+			    remove_oldest_log(FileNames,LogFilesDir); 
 			true->
 			    ok
 		    end;
@@ -226,8 +235,8 @@ write_info({Date,Time,Node,Type,Msg,InfoList})->
 	      [{Date,Time,Node,Type,Msg,InfoList}]),
     file:close(S).
 
-remove_oldest_log(FileNames)->
-    [File1|T]=[filename:join(?LogDir,FileName)||FileName<-FileNames],
+remove_oldest_log(FileNames,LogFilesDir)->
+    [File1|T]=[filename:join(LogFilesDir,FileName)||FileName<-FileNames],
     {ok,FileInfo}=file:read_file_info(File1),
     FileToDelete=oldest(T,File1,FileInfo),
     file:delete(FileToDelete).
