@@ -38,7 +38,6 @@
 %% --------------------------------------------------------------------
 -define(LogDirName,"logs").
 -define(LogFileName,"latest.log").
--define(Latest,filename:join(?LogDir,"latest.log")).
 
 
 %% --------------------------------------------------------------------
