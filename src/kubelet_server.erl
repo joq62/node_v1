@@ -69,8 +69,9 @@
 %% --------------------------------------------------------------------
 init([]) ->
     {ok,_}=kube_logger:start(),
-    {ok,ClusterIdAtom}=application:get_env(cluster_id),
-    ClusterId=atom_to_list(ClusterIdAtom),
+%    {ok,ClusterIdAtom}=application:get_env(cluster_id),
+%    ClusterId=atom_to_list(ClusterIdAtom),
+    {ok,ClusterId}=application:get_env(cluster_id),
     {ok,MonitorNode}=application:get_env(monitor_node),
     ?PrintLog(log,"Successful starting of server",[?MODULE]),
     ?PrintLog(debug,"Cookie",[erlang:get_cookie(),node(),?FUNCTION_NAME,?MODULE,?LINE]),
