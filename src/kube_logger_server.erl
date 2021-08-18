@@ -85,8 +85,9 @@
 %
 %% --------------------------------------------------------------------
 init([]) ->
-   {ok,ClusterIdAtom}=application:get_env(cluster_id),
-    ClusterId=atom_to_list(ClusterIdAtom),
+%   {ok,ClusterIdAtom}=application:get_env(cluster_id),
+ %   ClusterId=atom_to_list(ClusterIdAtom),
+    {ok,ClusterId}=application:get_env(cluster_id),
     LogFilesDir=filename:join([ClusterId,?LogDirName]),
     LogFile=filename:join([ClusterId,?LogDirName,?LogFileName]),
     {ok,_}=monitor:start(),
