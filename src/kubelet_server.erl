@@ -2,12 +2,16 @@
 %%% @author  : Joq Erlang
 %%% @doc: : 
 %%% Created :
-%%% Node end point 
-%%% Creates and deletes Pods
-%%% 
-%%% API-kube: Interface 
-%%% Pod consits beams from all services, app and app and sup erl.
-%%% The setup of envs is
+%%%  NodeServer=      'ClusterId_HostId_0@HostId'
+%%%  WorkerPod_1=     'ClusterId_HostId_1@HostId'
+%%%  WorkerPod_N=     'ClusterId_HostId_N@HostId'
+%%%  NodeServerDir=   0.ClusterId
+%%%  WorkerPod_1_Dir= 1.ClusterId
+%%%  N=20 
+%%%  db_node:
+%%%  [{Pod,Containers,Created},{Pod,Containers,Created}]
+%%%  
+%%%  env:ClusterId
 %%% -------------------------------------------------------------------
 -module(kubelet_server).  
 -behaviour(gen_server).
@@ -25,13 +29,14 @@
 -record(state, {cluster_id,
 		monitor_node,
 		pods}).
-
+	 
 
 
 %% --------------------------------------------------------------------
 %% Definitions 
 %% --------------------------------------------------------------------
-
+-define(KubeleId,0).
+-define(NumWorkerPods,2).
 %% --------------------------------------------------------------------
 %% Function: available_hosts()
 %% Description: Based on hosts.config file checks which hosts are avaible
@@ -75,9 +80,11 @@ init([]) ->
     {ok,MonitorNode}=application:get_env(monitor_node),
     ?PrintLog(log,"Successful starting of server",[?MODULE]),
     ?PrintLog(debug,"Cookie",[erlang:get_cookie(),node(),?FUNCTION_NAME,?MODULE,?LINE]),
+    Pods=kubelet_lib:create_pods(?NumWorkerPods),
+
     {ok, #state{cluster_id=ClusterId,
 		monitor_node=MonitorNode,
-		pods=[]}}.
+		pods=Pods}}.
     
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -89,6 +96,25 @@ init([]) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (aterminate/2 is called)
 %% --------------------------------------------------------------------
+
+
+
+handle_call({create_pod,Id},_From,State) ->
+    Reply=rpc:call(node(),kubelet_lib,create_pod,[Id],10*1000),
+    {reply,Reply,State};
+
+handle_call({scratch_pod,Pod},_From,State) ->
+    Reply=rpc:call(node(),kubelet_lib,scratch_pod,[Pod],10*1000),
+    {reply,Reply,State};
+
+handle_call({load_start_container,Pod,Container},_From,State) ->
+    Reply=rpc:call(node(),kubelet_lib,load_start_container,[Pod,Container],10*1000),
+    {reply,Reply,State};
+
+handle_call({stop_unload_container,Pod,Container},_From,State) ->
+    Reply=rpc:call(node(),kubelet_lib,stop_unload_container,[Pod,Container],10*1000),
+    {reply,Reply,State};
+
 
 handle_call({ping},_From,State) ->
     Reply={pong,node(),?MODULE},

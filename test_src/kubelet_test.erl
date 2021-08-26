@@ -31,13 +31,13 @@ start()->
     ok=setup(),
     io:format("~p~n",[{"Stop setup",?MODULE,?FUNCTION_NAME,?LINE}]),
 
-    io:format("~p~n",[{"Start pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
-    ok=pass_0(),
-    io:format("~p~n",[{"Stop pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
+  %  io:format("~p~n",[{"Start pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
+  %  ok=pass_0(),
+  %  io:format("~p~n",[{"Stop pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
 
-    io:format("~p~n",[{"Start pass_1()",?MODULE,?FUNCTION_NAME,?LINE}]),
-    ok=pass_1(),
-    io:format("~p~n",[{"Stop pass_1()",?MODULE,?FUNCTION_NAME,?LINE}]),
+ %   io:format("~p~n",[{"Start pass_1()",?MODULE,?FUNCTION_NAME,?LINE}]),
+ %   ok=pass_1(),
+ %   io:format("~p~n",[{"Stop pass_1()",?MODULE,?FUNCTION_NAME,?LINE}]),
 
 %    io:format("~p~n",[{"Start pass_2()",?MODULE,?FUNCTION_NAME,?LINE}]),
 %    ok=pass_2(),
@@ -72,28 +72,8 @@ start()->
 %% Returns: non
 %% --------------------------------------------------------------------
 pass_0()->
-    %Start one new pod orginal
-    []=kubelet:get_pods(),
-    Id="orginal_pod",
-    Vsn="1.0.0",
-    AppInfo={"orginal","1.0.0","https://github.com/joq62/orginal.git"},
-    Env=[],
-    Host=[],
-    {ok,Pod1}=kubelet:create_pod(Id,Vsn,AppInfo,Env),
-    [{"orginal_pod",
-      Node,
-      Dir,
-      _Date,
-      _Time}]=kubelet:get_pods(),
-    pong=net_adm:ping(Pod1),
-    {pong,_,support}=rpc:call(Pod1,support,ping,[]),
-    AppsSlave=rpc:call(Pod1,application,which_applications,[]),
-    true=lists:keymember(orginal,1,AppsSlave),
     
-    %% Delete
-    ok=kubelet:delete_pod(Id),
-    []=kubelet:get_pods(),
-    {badrpc,nodedown}=rpc:call(Pod1,support,ping,[]),
+    
     ok.
 
 %% --------------------------------------------------------------------
@@ -102,6 +82,23 @@ pass_0()->
 %% Returns: non
 %% --------------------------------------------------------------------
 pass_1()->
+    Id1=integer_to_list(1),
+    Id2=integer_to_list(2),
+    Id3=integer_to_list(3),
+    {ok,Pod1}=kubelet_lib:create_pod(Id1),
+    {ok,Pod2}=kubelet_lib:create_pod(Id2),
+    {ok,Pod3}=kubelet_lib:create_pod(Id3),
+    D=date(),
+    D=rpc:call(Pod1,erlang,date,[],2*1000),
+    D=rpc:call(Pod2,erlang,date,[],2*1000),
+    D=rpc:call(Pod3,erlang,date,[],2*1000),
+
+    timer:sleep(1000),
+    ok=kubelet_lib:delete_pod(Id1),
+    timer:sleep(1000),
+    ok=kubelet_lib:delete_pod(Id2),
+    timer:sleep(1000),
+    ok=kubelet_lib:delete_pod(Id3),
     
     ok.
 
@@ -111,7 +108,7 @@ pass_1()->
 %% Returns: non
 %% --------------------------------------------------------------------
 pass_2()->
-
+    
     ok.
 
 %% --------------------------------------------------------------------

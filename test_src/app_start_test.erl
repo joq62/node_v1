@@ -11,7 +11,7 @@
 %% --------------------------------------------------------------------
 -include_lib("eunit/include/eunit.hrl").
 %% --------------------------------------------------------------------
-
+-define(APP,iaas).
 %% External exports
 -export([start/0]).
 
@@ -49,18 +49,27 @@ start()->
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% --------------------------------------------------------------------
--define(APP,kubelet).
+
 setup()->
 
-    %% Test env vars 
-   
-%    io:format("Line = ~p~n",[{?MODULE,?LINE}]),
-    
-    % Start a Service application 
-    {ok,_}=pod_server:start(),
-    {ok,_}=kubelet:start(),    
-    	 
+    {ok,ClusterIdAtom}=application:get_env(unit_test,cluster_id),
+    ClusterId=atom_to_list(ClusterIdAtom),
+    os:cmd("rm -rf "++ClusterId),
+    ok=file:make_dir(ClusterId),
+    {ok,MonitorNodeNameAtom}=application:get_env(unit_test,monitor_node),
+    MonitorNodeName=atom_to_list(MonitorNodeNameAtom),
+    {ok,HostId}=inet:gethostname(),
+    MonitorNode=list_to_atom(MonitorNodeName++"@"++HostId),
+    Env=[{cluster_id,ClusterIdAtom},{monitor_node,MonitorNode}],
+    ok=application:set_env([{support,Env},
+			    {kubelet,Env},
+			    {etcd,Env}]),
+    ok=application:start(support),
+    ok=application:start(kubelet),
+    ok=application:start(etcd),
+    ok=application:start(iaas),
 
+    {pong,_,kubelet_server}=kubelet:ping(),
     ok.
 
 

@@ -1,30 +1,42 @@
 all:
 #	service
-	rm -rf ebin/*;
+	rm -rf ebin/* *.lgh lgh;
 	erlc -I ../interfaces -o ebin src/*.erl;
 	rm -rf src/*.beam *.beam  test_src/*.beam test_ebin;
 	rm -rf  *~ */*~  erl_cra*;
 	rm -rf *_specs *_config *.log catalog;
 	rm -rf *_pod*;
-
 	echo Done
-doc_gen:
-	echo glurk not implemented
 unit_test:
 	rm -rf ebin/* src/*.beam *.beam test_src/*.beam test_ebin;
 	rm -rf  *~ */*~  erl_cra*;
 	rm -rf *_specs *_config *.log *_pod*;
-#	support
-	cp ../support/src/support.app ebin;
-	erlc -o ebin ../support/src/*.erl;
-#	kubelet
-	cp src/*.app ebin;
-	erlc -o ebin src/*.erl;
-#	test application
 	mkdir test_ebin;
+#	interface
+	erlc -I ../interfaces -o test_ebin ../interfaces/*.erl;
+#	support
+	cp ../applications/support/src/*.app test_ebin;
+	erlc -I ../interfaces -o test_ebin ../kube_support/src/*.erl;
+	erlc -I ../interfaces -o test_ebin ../applications/support/src/*.erl;
+#	etcd
+	cp ../applications/etcd/src/*.app ebin;
+	erlc -I ../interfaces -o test_ebin ../kube_dbase/src/*.erl;
+	erlc -I ../interfaces -o test_ebin ../applications/etcd/src/*.erl;
+#	iaas
+	cp ../applications/iaas/src/*.app test_ebin;
+	erlc -I ../interfaces -o test_ebin ../kube_iaas/src/*.erl;
+	erlc -I ../interfaces -o test_ebin ../applications/iaas/src/*.erl;
+#	kubelet
+	cp ../applications/kubelet/src/*.app ebin;
+	erlc -I ../interfaces -o ebin ../applications/kubelet/src/*.erl;
+	erlc -I ../interfaces -o ebin src/*.erl;
+#	test application
 	cp test_src/*.app test_ebin;
-	erlc -o test_ebin test_src/*.erl;
+	erlc -I ../interfaces -o test_ebin test_src/*.erl;
 	erl -pa ebin -pa test_ebin\
-	    -setcookie abc\
-	    -sname test_kubelete\
-	    -run unit_test start_test test_src/test.config
+		-setcookie lgh_cookie\
+		-sname kubelet_lgh\
+		-unit_test monitor_node kubelet_lgh\
+		-unit_test cluster_id lgh\
+		-unit_test start_host_id c0_lgh\
+		-run unit_test start_test test_src/test.config
