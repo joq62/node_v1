@@ -65,8 +65,8 @@ setup()->
 			    {kubelet,Env},
 			    {etcd,Env}]),
     ok=application:start(support),
-    ok=application:start(kubelet),
     ok=application:start(etcd),
+    ok=application:start(kubelet),
     ok=application:start(iaas),
 
     {pong,_,kubelet_server}=kubelet:ping(),

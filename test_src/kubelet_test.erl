@@ -31,9 +31,9 @@ start()->
     ok=setup(),
     io:format("~p~n",[{"Stop setup",?MODULE,?FUNCTION_NAME,?LINE}]),
 
-  %  io:format("~p~n",[{"Start pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
-  %  ok=pass_0(),
-  %  io:format("~p~n",[{"Stop pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
+    io:format("~p~n",[{"Start pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
+    ok=pass_0(),
+    io:format("~p~n",[{"Stop pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
 
  %   io:format("~p~n",[{"Start pass_1()",?MODULE,?FUNCTION_NAME,?LINE}]),
  %   ok=pass_1(),
@@ -72,6 +72,23 @@ start()->
 %% Returns: non
 %% --------------------------------------------------------------------
 pass_0()->
+    {ok,ClusterId_X}=application:get_env(cluster_id),
+    ClusterId=case is_atom(ClusterId_X) of
+		  true->
+		      atom_to_list(ClusterId_X);
+		  false->
+		      ClusterId_X
+	      end,
+    PodsList=[Pods||{_DeploymentId,_Vsn,Pods,_ClusterId}<-db_deployment_spec:key_cluster_id(ClusterId)],
+    ContainersList=[db_pod_spec:containers(PodId)||[{PodId,_Vsn,_Num}]<-PodsList],
+    ContainersToStart=lists:append(ContainersList),
+    
+    StartList=[kubelet:load_start(Container)||Container<-ContainersToStart],
+    
+    io:format(" 1. sd:get() ~p~n",[{sd:get(support),sd:get(mymath),?MODULE,?LINE}]),
+    StopList=[kubelet:stop_unload(Pod,Container)||{ok,Container,Pod}<-StartList],
+    io:format(" 1. sd:get() ~p~n",[{sd:get(support),sd:get(mymath),?MODULE,?LINE}]),
+    
     
     
     ok.

@@ -79,12 +79,15 @@ init([]) ->
     {ok,ClusterId}=application:get_env(cluster_id),
     {ok,MonitorNode}=application:get_env(monitor_node),
     ?PrintLog(log,"Successful starting of server",[?MODULE]),
-    ?PrintLog(debug,"Cookie",[erlang:get_cookie(),node(),?FUNCTION_NAME,?MODULE,?LINE]),
-    Pods=kubelet_lib:create_pods(?NumWorkerPods),
+
+    CreateResult=kubelet_lib:create_pods(?NumWorkerPods),
+    ActivePods=[Pod||{ok,Pod}<-CreateResult],
+    
+    ?PrintLog(debug,"ActivePods",[ActivePods,?FUNCTION_NAME,?MODULE,?LINE]),     
 
     {ok, #state{cluster_id=ClusterId,
 		monitor_node=MonitorNode,
-		pods=Pods}}.
+		pods=ActivePods}}.
     
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -107,12 +110,12 @@ handle_call({scratch_pod,Pod},_From,State) ->
     Reply=rpc:call(node(),kubelet_lib,scratch_pod,[Pod],10*1000),
     {reply,Reply,State};
 
-handle_call({load_start_container,Pod,Container},_From,State) ->
-    Reply=rpc:call(node(),kubelet_lib,load_start_container,[Pod,Container],10*1000),
+handle_call({load_start,Container},_From,State) ->
+    Reply=rpc:call(node(),kubelet_lib,load_start,[Container,State#state.pods],10*1000),
     {reply,Reply,State};
 
-handle_call({stop_unload_container,Pod,Container},_From,State) ->
-    Reply=rpc:call(node(),kubelet_lib,stop_unload_container,[Pod,Container],10*1000),
+handle_call({stop_unload,Pod,Container},_From,State) ->
+    Reply=rpc:call(node(),kubelet_lib,stop_unload,[Pod,Container],10*1000),
     {reply,Reply,State};
 
 
