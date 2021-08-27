@@ -79,7 +79,6 @@ init([]) ->
     {ok,ClusterId}=application:get_env(cluster_id),
     {ok,MonitorNode}=application:get_env(monitor_node),
     ?PrintLog(log,"Successful starting of server",[?MODULE]),
-
     CreateResult=kubelet_lib:create_pods(?NumWorkerPods),
     ActivePods=[Pod||{ok,Pod}<-CreateResult],
     

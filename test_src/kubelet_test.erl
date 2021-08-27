@@ -72,6 +72,15 @@ start()->
 %% Returns: non
 %% --------------------------------------------------------------------
 pass_0()->
+    
+    ok.
+
+%% --------------------------------------------------------------------
+%% Function:start/0 
+%% Description: Initiate the eunit tests, set upp needed processes etc
+%% Returns: non
+%% --------------------------------------------------------------------
+pass_1()->
     {ok,ClusterId_X}=application:get_env(cluster_id),
     ClusterId=case is_atom(ClusterId_X) of
 		  true->
@@ -82,23 +91,19 @@ pass_0()->
     PodsList=[Pods||{_DeploymentId,_Vsn,Pods,_ClusterId}<-db_deployment_spec:key_cluster_id(ClusterId)],
     ContainersList=[db_pod_spec:containers(PodId)||[{PodId,_Vsn,_Num}]<-PodsList],
     ContainersToStart=lists:append(ContainersList),
-    
     StartList=[kubelet:load_start(Container)||Container<-ContainersToStart],
     
     io:format(" 1. sd:get() ~p~n",[{sd:get(support),sd:get(mymath),?MODULE,?LINE}]),
     StopList=[kubelet:stop_unload(Pod,Container)||{ok,Container,Pod}<-StartList],
-    io:format(" 1. sd:get() ~p~n",[{sd:get(support),sd:get(mymath),?MODULE,?LINE}]),
-    
-    
+    io:format(" 1. sd:get() ~p~n",[{sd:get(support),sd:get(mymath),?MODULE,?LINE}]), 
     
     ok.
-
 %% --------------------------------------------------------------------
 %% Function:start/0 
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% --------------------------------------------------------------------
-pass_1()->
+pass_2()->
     Id1=integer_to_list(1),
     Id2=integer_to_list(2),
     Id3=integer_to_list(3),
@@ -119,14 +124,6 @@ pass_1()->
     
     ok.
 
-%% --------------------------------------------------------------------
-%% Function:start/0 
-%% Description: Initiate the eunit tests, set upp needed processes etc
-%% Returns: non
-%% --------------------------------------------------------------------
-pass_2()->
-    
-    ok.
 
 %% --------------------------------------------------------------------
 %% Function:start/0 

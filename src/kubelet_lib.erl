@@ -47,6 +47,7 @@ load_start({AppId,AppVsn,GitPath,AppEnv},Pods)->
 		       {error,Reason}->
 			   {error,Reason};
 		       ok->
+			   {atomic,ok}=db_kubelet:add_container(WorkerPod,{AppId,AppVsn,GitPath,AppEnv}),
 			   {ok,{AppId,AppVsn,GitPath,AppEnv},WorkerPod}
 		   end
 	   end,
@@ -96,13 +97,14 @@ start(AppId,Pod)->
 %% Description: List of test cases 
 %% Returns: non
 %% --------------------------------------------------------------------
-stop_unload(Pod,{AppId,_AppVsn,_GitPath,_AppEnv})->
+stop_unload(Pod,{AppId,AppVsn,GitPath,AppEnv})->
     Dir=db_kubelet:dir(Pod),
     AppDir=filename:join(Dir,AppId),
     App=list_to_atom(AppId),
     rpc:call(Pod,application,stop,[App],5*1000),
     rpc:call(Pod,application,unload,[App],5*1000),
     rpc:call(Pod,os,cmd,["rm -rf "++AppDir],3*1000),
+    {atomic,ok}=db_kubelet:delete_container(Pod,{AppId,AppVsn,GitPath,AppEnv}),
     ok.
     
 %% --------------------------------------------------------------------
@@ -204,6 +206,7 @@ delete_pod(Pod,Dir)->
 	       false->
 		   {error,["node not stopped",Pod,?FUNCTION_NAME,?MODULE,?LINE]};
 	       true->
+		   db_kubelet:delete(Pod),
 		   ok
 	   end,
     Result.
