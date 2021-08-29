@@ -71,7 +71,7 @@ start()->
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% --------------------------------------------------------------------
-pass_0()->
+pass_1()->
     
     ok.
 
@@ -80,7 +80,7 @@ pass_0()->
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% --------------------------------------------------------------------
-pass_1()->
+pass_0()->
     {ok,ClusterId_X}=application:get_env(cluster_id),
     ClusterId=case is_atom(ClusterId_X) of
 		  true->
@@ -93,9 +93,12 @@ pass_1()->
     ContainersToStart=lists:append(ContainersList),
     StartList=[kubelet:load_start(Container)||Container<-ContainersToStart],
     
-    io:format(" 1. sd:get() ~p~n",[{sd:get(support),sd:get(mymath),?MODULE,?LINE}]),
+    io:format(" 1. db_kubelet:read_all() ~p~n",[{db_kubelet:read_all(),?MODULE,?LINE}]),
+    
+    
+    
     StopList=[kubelet:stop_unload(Pod,Container)||{ok,Container,Pod}<-StartList],
-    io:format(" 1. sd:get() ~p~n",[{sd:get(support),sd:get(mymath),?MODULE,?LINE}]), 
+    io:format(" 2. db_kubelet:read_all() ~p~n",[{db_kubelet:read_all(),?MODULE,?LINE}]),
     
     ok.
 %% --------------------------------------------------------------------

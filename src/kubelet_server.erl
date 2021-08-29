@@ -36,7 +36,7 @@
 %% Definitions 
 %% --------------------------------------------------------------------
 -define(KubeleId,0).
--define(NumWorkerPods,2).
+-define(NumWorkerPods,10).
 %% --------------------------------------------------------------------
 %% Function: available_hosts()
 %% Description: Based on hosts.config file checks which hosts are avaible
@@ -74,12 +74,12 @@
 %% --------------------------------------------------------------------
 init([]) ->
     {ok,_}=kube_logger:start(),
-%    {ok,ClusterIdAtom}=application:get_env(cluster_id),
-%    ClusterId=atom_to_list(ClusterIdAtom),
-    {ok,ClusterId}=application:get_env(cluster_id),
-    {ok,MonitorNode}=application:get_env(monitor_node),
+    ClusterId=sd:call(etcd,db_cluster_info,cluster,[],5*1000),
+    MonitorNode=sd:call(etcd,db_cluster_info,monitor,[],5*1000),
+
     ?PrintLog(log,"Successful starting of server",[?MODULE]),
-    CreateResult=kubelet_lib:create_pods(?NumWorkerPods),
+
+    CreateResult=pod:create_pods(?NumWorkerPods),
     ActivePods=[Pod||{ok,Pod}<-CreateResult],
     
     ?PrintLog(debug,"ActivePods",[ActivePods,?FUNCTION_NAME,?MODULE,?LINE]),     
@@ -110,11 +110,11 @@ handle_call({scratch_pod,Pod},_From,State) ->
     {reply,Reply,State};
 
 handle_call({load_start,Container},_From,State) ->
-    Reply=rpc:call(node(),kubelet_lib,load_start,[Container,State#state.pods],10*1000),
+    Reply=rpc:call(node(),container,load_start,[Container,State#state.pods],10*1000),
     {reply,Reply,State};
 
 handle_call({stop_unload,Pod,Container},_From,State) ->
-    Reply=rpc:call(node(),kubelet_lib,stop_unload,[Pod,Container],10*1000),
+    Reply=rpc:call(node(),container,stop_unload,[Pod,Container],10*1000),
     {reply,Reply,State};
 
 

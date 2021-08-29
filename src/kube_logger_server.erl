@@ -87,7 +87,7 @@
 init([]) ->
 %   {ok,ClusterIdAtom}=application:get_env(cluster_id),
  %   ClusterId=atom_to_list(ClusterIdAtom),
-    {ok,ClusterId}=application:get_env(cluster_id),
+    ClusterId=sd:call(etcd,db_cluster_info,cluster,[],5*1000),
     LogFilesDir=filename:join([ClusterId,?LogDirName]),
     LogFile=filename:join([ClusterId,?LogDirName,?LogFileName]),
     {ok,_}=monitor:start(),
@@ -128,14 +128,9 @@ handle_cast({print_type,Type}, State) ->
 
 handle_cast({log_msg,Info}, State) ->
  %  io:format("Info ~p~n",[Info]),
-    case application:get_env(kubelet,monitor_node) of
-	undefined->
-	    ok;
-	{ok,Node}->
-	    rpc:cast(Node,monitor,print,[Info])
-	    %   rpc:cast(Node,kubelet_server,log_to_file,[Info])
-	 
-    end,
+    Monitor=sd:call(etcd,db_cluster_info,monitor,[],5*1000),
+    rpc:cast(Monitor,monitor,print,[Info]),
+    
     LogFilesDir=State#state.log_files_dir,
     LogFile=State#state.log_file,
     log_to_file(Info,LogFilesDir,LogFile),
