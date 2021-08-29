@@ -81,9 +81,6 @@ init([]) ->
 
     CreateResult=pod:create_pods(?NumWorkerPods),
     ActivePods=[Pod||{ok,Pod}<-CreateResult],
-    
-    ?PrintLog(debug,"ActivePods",[ActivePods,?FUNCTION_NAME,?MODULE,?LINE]),     
-
     {ok, #state{cluster_id=ClusterId,
 		monitor_node=MonitorNode,
 		pods=ActivePods}}.
