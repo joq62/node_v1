@@ -74,6 +74,7 @@
 %% --------------------------------------------------------------------
 init([]) ->
     {ok,_}=kube_logger:start(),
+    ssh:start(),
     ClusterId=sd:call(etcd,db_cluster_info,cluster,[],5*1000),
     MonitorNode=sd:call(etcd,db_cluster_info,monitor,[],5*1000),
 
@@ -102,6 +103,10 @@ handle_call({load_start_app,Node,AppId,Dir},_From,State) ->
 
 handle_call({stop_unload_app,Node,AppId,Dir},_From,State) ->
     Reply=rpc:call(node(),kubelet_lib,stop_unload_app,[Node,AppId,Dir],10*1000),
+    {reply,Reply,State};
+
+handle_call({create_vm_ssh,Alias,NodeName,Dir,Cookie},_From,State) ->
+    Reply=rpc:call(node(),node_ssh,create_node,[Alias,NodeName,Dir,Cookie],30*1000),
     {reply,Reply,State};
 
 handle_call({create_vm,NodeName,Dir},_From,State) ->

@@ -16,7 +16,6 @@
 
 -export([
 	 create_node/4,
-	 stop_node/2,
 	 load_start_app/3
 
 	]).

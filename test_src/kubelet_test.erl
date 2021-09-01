@@ -89,10 +89,10 @@ node_ssh()->
     NodeName1= Name1="dep1_100_cl1_"++HostName,
     Dir1="dep1_100_cl1_"++HostName++".deployment",
     Cookie=atom_to_list(erlang:get_cookie()),
-    {ok,Node1}=node_ssh:create_node(Alias,NodeName1,Dir1,Cookie),
+    {ok,Node1}=kubelet:create_vm_ssh(Alias,NodeName1,Dir1,Cookie),
 
     AppId="mymath",
-    node_ssh:load_start_app(Node1,AppId,Dir1),
+    kubelet:load_start_app(Node1,AppId,Dir1),
     42=rpc:call(Node1,mymath,add,[20,22],3*1000),
    % kubelet:delete_vm(Node1,Dir),
    % {badrpc,nodedown}=rpc:call(Node1,mymath,add,[20,22],3*1000),
