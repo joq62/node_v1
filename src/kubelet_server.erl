@@ -78,12 +78,12 @@ init([]) ->
     MonitorNode=sd:call(etcd,db_cluster_info,monitor,[],5*1000),
 
     ?PrintLog(log,"Successful starting of server",[?MODULE]),
-
-    CreateResult=pod:create_pods(?NumWorkerPods),
-    ActivePods=[Pod||{ok,Pod}<-CreateResult],
+    ok=rpc:call(node(),kubelet_lib,scratch,[],10*1000),
+  %  CreateResult=pod:create_pods(?NumWorkerPods),
+  %  ActivePods=[Pod||{ok,Pod}<-CreateResult],
     {ok, #state{cluster_id=ClusterId,
 		monitor_node=MonitorNode,
-		pods=ActivePods}}.
+		pods=[]}}.
     
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -96,7 +96,21 @@ init([]) ->
 %%          {stop, Reason, State}            (aterminate/2 is called)
 %% --------------------------------------------------------------------
 
+handle_call({load_start_app,Node,AppId,Dir},_From,State) ->
+    Reply=rpc:call(node(),kubelet_lib,load_start_app,[Node,AppId,Dir],20*1000),
+    {reply,Reply,State};
 
+handle_call({stop_unload_app,Node,AppId,Dir},_From,State) ->
+    Reply=rpc:call(node(),kubelet_lib,stop_unload_app,[Node,AppId,Dir],10*1000),
+    {reply,Reply,State};
+
+handle_call({create_vm,NodeName,Dir},_From,State) ->
+    Reply=rpc:call(node(),kubelet_lib,create_vm,[NodeName,Dir],10*1000),
+    {reply,Reply,State};
+
+handle_call({delete_vm,NodeName,Dir},_From,State) ->
+    Reply=rpc:call(node(),kubelet_lib,delete_vm,[NodeName,Dir],10*1000),
+    {reply,Reply,State};
 
 handle_call({create_pod,Id},_From,State) ->
     Reply=rpc:call(node(),kubelet_lib,create_pod,[Id],10*1000),

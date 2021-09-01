@@ -31,9 +31,17 @@ start()->
     ok=setup(),
     io:format("~p~n",[{"Stop setup",?MODULE,?FUNCTION_NAME,?LINE}]),
 
-    io:format("~p~n",[{"Start pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
-    ok=pass_0(),
-    io:format("~p~n",[{"Stop pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
+    io:format("~p~n",[{"Start vm()",?MODULE,?FUNCTION_NAME,?LINE}]),
+    ok=vm(),
+    io:format("~p~n",[{"Stop vm()",?MODULE,?FUNCTION_NAME,?LINE}]),
+
+    io:format("~p~n",[{"Start app()",?MODULE,?FUNCTION_NAME,?LINE}]),
+    ok=app(),
+    io:format("~p~n",[{"Stop app()",?MODULE,?FUNCTION_NAME,?LINE}]),
+
+  %  io:format("~p~n",[{"Start pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
+   % ok=pass_0(),
+   % io:format("~p~n",[{"Stop pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
 
  %   io:format("~p~n",[{"Start pass_1()",?MODULE,?FUNCTION_NAME,?LINE}]),
  %   ok=pass_1(),
@@ -65,6 +73,59 @@ start()->
     io:format("------>"++atom_to_list(?MODULE)++" ENDED SUCCESSFUL ---------"),
     ok.
 
+
+%% --------------------------------------------------------------------
+%% Function:start/0 
+%% Description: Initiate the eunit tests, set upp needed processes etc
+%% Returns: non
+%% --------------------------------------------------------------------
+app()->
+    
+    HostName=net_adm:localhost(),
+    Name1="dep1_100_cl1_"++HostName,
+    Dir1="dep1_100_cl1_"++HostName++".deployment",
+    {ok,Node1}=kubelet:create_vm(Name1,Dir1),
+    D=date(),
+    D=rpc:call(Node1,erlang,date,[],3*1000),
+    AppId="mymath",
+    ok=case db_pod_spec:containers(AppId) of
+	   {error,Reason}->
+	       {error,Reason};
+	   [{AppId,AppVsn,GitPath,Env}]->
+	       kubelet:load_start_app(Node1,AppId,Dir1)
+       end,
+    42=rpc:call(Node1,mymath,add,[20,22],3*1000),
+
+    kubelet:stop_unload_app(Node1,AppId,Dir1),
+    42=rpc:call(Node1,mymath,add,[20,22],3*1000),
+    kubelet:delete_vm(Node1,Dir1),
+    {badrpc,nodedown}=rpc:call(Node1,mymath,add,[20,22],3*1000),
+    
+    
+    
+   
+
+    ok.
+
+%% --------------------------------------------------------------------
+%% Function:start/0 
+%% Description: Initiate the eunit tests, set upp needed processes etc
+%% Returns: non
+%% --------------------------------------------------------------------
+vm()->
+    
+    HostName=net_adm:localhost(),
+    Name1="dep1_100_cl1_"++HostName,
+    Dir1="dep1_100_cl1_"++HostName++".deployment",
+    {ok,Node1}=kubelet_lib:create_vm(Name1,Dir1),
+    D=date(),
+    D=rpc:call(Node1,erlang,date,[],3*1000),
+    timer:sleep(3000),
+    ok=kubelet_lib:delete_vm(Node1,Dir1),
+    
+    
+
+    ok.
 
 %% --------------------------------------------------------------------
 %% Function:start/0 

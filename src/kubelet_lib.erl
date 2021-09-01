@@ -15,6 +15,14 @@
 % New final ?
 
 -export([
+	 create_vm/2,
+	 delete_vm/2,
+	 scratch/0,
+
+	 load_start_app/3,
+	 load_start_app/6,
+	 stop_unload_app/3,
+	 
 	 load_start/2,
 	 stop_unload/2,
 	 
@@ -27,6 +35,101 @@
 %% ====================================================================
 %% External functions
 %% ====================================================================
+%% --------------------------------------------------------------------
+%% Function:start
+%% Description: List of test cases 
+%% Returns: non
+%% --------------------------------------------------------------------
+load_start_app(Node,AppId,Dir)->
+    Result=case db_pod_spec:containers(AppId) of
+	       {error,Reason}->
+		   {error,Reason};
+	       [{AppId,AppVsn,GitPath,Env}]->
+		   kubelet_lib:load_start_app(Node,Dir,AppId,AppVsn,GitPath,Env)
+	   end,
+    Result.
+%% --------------------------------------------------------------------
+%% Function:start
+%% Description: List of test cases 
+%% Returns: non
+%% --------------------------------------------------------------------
+
+load_start_app(Node,Dir,AppId,AppVsn,GitPath,Env)->
+    AppDir=filename:join(Dir,AppId),
+    Ebin=filename:join(AppDir,"ebin"),
+    App=list_to_atom(AppId),
+    os:cmd("rm -rf "++AppDir),
+    _R=rpc:call(Node,os,cmd,["git clone "++GitPath++" "++AppDir],10*1000),
+    _SetEnv=rpc:call(Node,application,set_env,[[{App,Env}]],5*1000),
+   % io:format("SetEnv ~p~n",[SetEnv]),
+    _AddCode=rpc:call(Node,code,add_patha,[Ebin],5*1000),
+ %   io:format("AddCode ~p~n",[AddCode]),    
+  %  io:format("~p~n",[R]),
+    ok=rpc:call(Node,application,start,[App],5*1000),
+    ok.
+%% --------------------------------------------------------------------
+%% Function:start
+%% Description: List of test cases 
+%% Returns: non
+%% --------------------------------------------------------------------
+stop_unload_app(Node,AppId,Dir)->
+    AppDir=filename:join(Dir,AppId),
+    Ebin=filename:join(AppDir,"ebin"),
+    App=list_to_atom(AppId),
+    ok=rpc:call(Node,application,stop,[App],5*1000),
+    ok=rpc:call(Node,application,unload,[App],5*1000),
+    true=rpc:call(Node,code,del_path,[Ebin],5*1000),
+    rpc:call(Node,os,cmd,["rm -rf "++AppDir],5*1000),
+    ok.
+%% --------------------------------------------------------------------
+%% Function:start
+%% Description: List of test cases 
+%% Returns: non
+%% --------------------------------------------------------------------
+scratch()->
+    {ok,FileNames}=file:list_dir("."),
+    FilesToScratch=[FileName||FileName<-FileNames,
+				   ".deployment"==filename:extension(FileName)],
+    [os:cmd("rm -rf "++FileToScratch)||FileToScratch<-FilesToScratch],
+    HostName=net_adm:localhost(),
+    [rpc:call(list_to_atom(FileToScratch++"@"++HostName),init,stop,[],5*1000)||FileToScratch<-FilesToScratch],
+
+    ok.
+%% --------------------------------------------------------------------
+%% Function:start
+%% Description: List of test cases 
+%% Returns: non
+%% --------------------------------------------------------------------
+create_vm(NodeName,Dir)->
+    delete_vm(NodeName,Dir),
+    Cookie=atom_to_list(erlang:get_cookie()),
+    HostName=net_adm:localhost(),
+    Args="-setcookie "++Cookie,
+    Result=case slave:start(HostName, NodeName,Args) of
+	       {error, Reason}->
+		   {error,[Reason,?FUNCTION_NAME,?MODULE,?LINE]};
+	       {ok,Node}->
+		   case file:make_dir(Dir) of
+		       {error, Reason}->
+			   {error,[Reason,?FUNCTION_NAME,?MODULE,?LINE]};
+		       ok->
+			   {ok,Node}
+		   end
+	   end,
+    Result.
+    
+    
+
+%% --------------------------------------------------------------------
+%% Function:start
+%% Description: List of test cases 
+%% Returns: non
+%% --------------------------------------------------------------------
+delete_vm(Node,Dir)->
+    os:cmd("rm -rf "++Dir),
+    slave:stop(Node),
+    ok.
+
 %% --------------------------------------------------------------------
 %% Function:start
 %% Description: List of test cases 
