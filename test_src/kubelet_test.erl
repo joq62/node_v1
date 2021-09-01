@@ -39,6 +39,10 @@ start()->
     ok=app(),
     io:format("~p~n",[{"Stop app()",?MODULE,?FUNCTION_NAME,?LINE}]),
 
+    io:format("~p~n",[{"Start node_ssh()",?MODULE,?FUNCTION_NAME,?LINE}]),
+    ok=node_ssh(),
+    io:format("~p~n",[{"Stop node_ssh)",?MODULE,?FUNCTION_NAME,?LINE}]),
+
   %  io:format("~p~n",[{"Start pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
    % ok=pass_0(),
    % io:format("~p~n",[{"Stop pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
@@ -74,6 +78,26 @@ start()->
     ok.
 
 
+%% --------------------------------------------------------------------
+%% Function:start/0 
+%% Description: Initiate the eunit tests, set upp needed processes etc
+%% Returns: non
+%% --------------------------------------------------------------------
+node_ssh()->
+    Alias="c0_lgh",
+    HostName="c0",
+    NodeName1= Name1="dep1_100_cl1_"++HostName,
+    Dir1="dep1_100_cl1_"++HostName++".deployment",
+    Cookie=atom_to_list(erlang:get_cookie()),
+    {ok,Node1}=node_ssh:create_node(Alias,NodeName1,Dir1,Cookie),
+
+    AppId="mymath",
+    node_ssh:load_start_app(Node1,AppId,Dir1),
+    42=rpc:call(Node1,mymath,add,[20,22],3*1000),
+   % kubelet:delete_vm(Node1,Dir),
+   % {badrpc,nodedown}=rpc:call(Node1,mymath,add,[20,22],3*1000),
+    
+    ok.
 %% --------------------------------------------------------------------
 %% Function:start/0 
 %% Description: Initiate the eunit tests, set upp needed processes etc

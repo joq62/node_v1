@@ -54,7 +54,7 @@ load_start_app(Node,AppId,Dir)->
 %% Returns: non
 %% --------------------------------------------------------------------
 
-load_start_app(Node,Dir,AppId,AppVsn,GitPath,Env)->
+load_start_app(Node,Dir,AppId,_AppVsn,GitPath,Env)->
     AppDir=filename:join(Dir,AppId),
     Ebin=filename:join(AppDir,"ebin"),
     App=list_to_atom(AppId),
