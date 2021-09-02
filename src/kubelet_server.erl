@@ -2,14 +2,6 @@
 %%% @author  : Joq Erlang
 %%% @doc: : 
 %%% Created :
-%%%  NodeServer=      'ClusterId_HostId_0@HostId'
-%%%  WorkerPod_1=     'ClusterId_HostId_1@HostId'
-%%%  WorkerPod_N=     'ClusterId_HostId_N@HostId'
-%%%  NodeServerDir=   0.ClusterId
-%%%  WorkerPod_1_Dir= 1.ClusterId
-%%%  N=20 
-%%%  db_node:
-%%%  [{Pod,Containers,Created},{Pod,Containers,Created}]
 %%%  
 %%%  env:ClusterId
 %%% -------------------------------------------------------------------
@@ -79,7 +71,7 @@ init([]) ->
     MonitorNode=sd:call(etcd,db_cluster_info,monitor,[],5*1000),
 
     ?PrintLog(log,"Successful starting of server",[?MODULE]),
-    ok=rpc:call(node(),kubelet_lib,scratch,[],10*1000),
+%    ok=rpc:call(node(),kubelet_lib,scratch,[],10*1000),
   %  CreateResult=pod:create_pods(?NumWorkerPods),
   %  ActivePods=[Pod||{ok,Pod}<-CreateResult],
     {ok, #state{cluster_id=ClusterId,

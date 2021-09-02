@@ -64,8 +64,12 @@ create_node(Alias,NodeName,Dir,Cookie)->
 			   ?PrintLog(ticket,"Failed ",[Node,Alias,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]),
 			   {error,['failed to start', Node,Alias,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]};
 		       true->
-			   rpc:call(Node,os,cmd,["rm -rf "++Dir],5*1000),
-			   timer:sleep(1000),
+			   % 
+			   {ok,Files}=rpc:call(Node,file,list_dir,["."],5*1000),
+			   DeplomentDirs=[File||File<-Files,
+						".deployment"==filename:extension(File)],
+			   [rpc:call(Node,os,cmd,["rm -rf "++DeplomentDir],5*1000)||DeplomentDir<-DeplomentDirs],
+			   timer:sleep(100),
 			   case rpc:call(Node,file,make_dir,[Dir],5*1000) of
 			       {error,Reason}->
 				   ?PrintLog(ticket,"Failed ",[Reason,Node,Alias,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]),
