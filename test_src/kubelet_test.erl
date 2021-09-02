@@ -31,9 +31,9 @@ start()->
     ok=setup(),
     io:format("~p~n",[{"Stop setup",?MODULE,?FUNCTION_NAME,?LINE}]),
 
-    io:format("~p~n",[{"Start vm()",?MODULE,?FUNCTION_NAME,?LINE}]),
-    ok=vm(),
-    io:format("~p~n",[{"Stop vm()",?MODULE,?FUNCTION_NAME,?LINE}]),
+%    io:format("~p~n",[{"Start vm()",?MODULE,?FUNCTION_NAME,?LINE}]),
+%    ok=vm(),
+%    io:format("~p~n",[{"Stop vm()",?MODULE,?FUNCTION_NAME,?LINE}]),
 
     io:format("~p~n",[{"Start app()",?MODULE,?FUNCTION_NAME,?LINE}]),
     ok=app(),
@@ -84,8 +84,8 @@ start()->
 %% Returns: non
 %% --------------------------------------------------------------------
 node_ssh()->
-    Alias="c0_lgh",
-    HostName="c0",
+    Alias="asus_varmdo",
+    HostName=net_adm:localhost(),
     NodeName1= Name1="dep1_100_cl1_"++HostName,
     Dir1="dep1_100_cl1_"++HostName++".deployment",
     Cookie=atom_to_list(erlang:get_cookie()),
@@ -93,7 +93,7 @@ node_ssh()->
 
     AppId="mymath",
     kubelet:load_start_app(Node1,AppId,Dir1),
-    42=rpc:call(Node1,mymath,add,[20,22],3*1000),
+    42=rpc:call(Node1,mymath,add,[20,22],10*1000),
    % kubelet:delete_vm(Node1,Dir),
    % {badrpc,nodedown}=rpc:call(Node1,mymath,add,[20,22],3*1000),
     
@@ -108,6 +108,9 @@ app()->
     HostName=net_adm:localhost(),
     Name1="dep1_100_cl1_"++HostName,
     Dir1="dep1_100_cl1_"++HostName++".deployment",
+    NodeX=list_to_atom(Name1++"@"++HostName),
+    kubelet:delete_vm(NodeX,Dir1),
+
     {ok,Node1}=kubelet:create_vm(Name1,Dir1),
     D=date(),
     D=rpc:call(Node1,erlang,date,[],3*1000),

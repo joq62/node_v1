@@ -15,6 +15,7 @@
 % New final ?
 
 -export([
+	 erl_create_vm/2,
 	 create_vm/2,
 	 delete_vm/2,
 	 scratch/0,
@@ -59,14 +60,17 @@ load_start_app(Node,Dir,AppId,_AppVsn,GitPath,Env)->
     Ebin=filename:join(AppDir,"ebin"),
     App=list_to_atom(AppId),
     os:cmd("rm -rf "++AppDir),
-    _R=rpc:call(Node,os,cmd,["git clone "++GitPath++" "++AppDir],10*1000),
-    _SetEnv=rpc:call(Node,application,set_env,[[{App,Env}]],5*1000),
+    GitClone=rpc:call(Node,os,cmd,["git clone "++GitPath++" "++AppDir],10*1000),
+    SetEnv=rpc:call(Node,application,set_env,[[{App,Env}]],5*1000),
    % io:format("SetEnv ~p~n",[SetEnv]),
-    _AddCode=rpc:call(Node,code,add_patha,[Ebin],5*1000),
+    AddPath=rpc:call(Node,code,add_patha,[Ebin],5*1000),
  %   io:format("AddCode ~p~n",[AddCode]),    
   %  io:format("~p~n",[R]),
-    ok=rpc:call(Node,application,start,[App],5*1000),
-    ok.
+    AppStartResult=rpc:call(Node,application,start,[App],5*1000),
+    {ok,[{git_clone,GitClone},
+	 {set_env,SetEnv},
+	 {add_path,AddPath},
+	 {app_start,AppStartResult}]}.
 %% --------------------------------------------------------------------
 %% Function:start
 %% Description: List of test cases 
@@ -100,12 +104,44 @@ scratch()->
 %% Description: List of test cases 
 %% Returns: non
 %% --------------------------------------------------------------------
+erl_create_vm(NodeName,Dir)->
+    HostId=net_adm:localhost(),
+    Node=list_to_atom(NodeName++"@"++HostId),
+    Cookie=atom_to_list(erlang:get_cookie()),
+    ok=delete_vm(Node,Dir),
+
+    ErlCmd="erl_call -s "++"-sname "++NodeName++" "++"-c "++Cookie,
+    ErlcCmdResult=rpc:call(node(),os,cmd,[ErlCmd],7*1000),
+    Result=case node_started(Node) of
+	       false->
+		   ?PrintLog(ticket,"Failed ",[Node,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]),
+		   {error,['failed to start', Node,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]};
+	       true->
+		   ?PrintLog(log,"Started ",[Node,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]),
+		   case file:make_dir(Dir) of
+		       {error, Reason}->
+			   {error,[Reason,?FUNCTION_NAME,?MODULE,?LINE]};
+		       ok->
+			   {ok,Node}
+		   end
+	   end,
+    Result.
+%% --------------------------------------------------------------------
+%% Function:start
+%% Description: List of test cases 
+%% Returns: non
+%% --------------------------------------------------------------------
 create_vm(NodeName,Dir)->
+    io:format("NodeName ~p~n",[NodeName]),
     delete_vm(NodeName,Dir),
     Cookie=atom_to_list(erlang:get_cookie()),
+    io:format("Cookie ~p~n",[Cookie]),
     HostName=net_adm:localhost(),
+    io:format("HostName ~p~n",[HostName]),
     Args="-setcookie "++Cookie,
-    Result=case slave:start(HostName, NodeName,Args) of
+    Result=case rpc:call(node(),slave,start,[HostName, NodeName,Args],10*1000) of
+	       {badrpc, Reason}->
+		   {error,[badrpc,Reason,?FUNCTION_NAME,?MODULE,?LINE]};
 	       {error, Reason}->
 		   {error,[Reason,?FUNCTION_NAME,?MODULE,?LINE]};
 	       {ok,Node}->

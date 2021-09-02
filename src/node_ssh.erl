@@ -45,7 +45,7 @@
 %% --------------------------------------------------------------------
 create_node(Alias,NodeName,Dir,Cookie)->
     ssh:start(),
-    Result=case sd:call(etcd,db_host_info,read,[Alias],4*1000) of
+    Result=case sd:call(etcd,db_host_info,read,[Alias],5*1000) of
 	       []->
 		   ?PrintLog(ticket,"eexists ",[Alias,NodeName,?FUNCTION_NAME,?MODULE,?LINE]),
 		   {error,[eexists,Alias,?FUNCTION_NAME,?MODULE,?LINE]};

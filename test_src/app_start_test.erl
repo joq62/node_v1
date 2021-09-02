@@ -11,7 +11,7 @@
 %% --------------------------------------------------------------------
 -include_lib("eunit/include/eunit.hrl").
 %% --------------------------------------------------------------------
--define(APP,iaas).
+
 %% External exports
 -export([start/0]).
 
@@ -70,9 +70,7 @@ setup()->
     ok=application:start(support),
     ok=application:start(etcd),
     ok=application:start(kubelet),
-    ok=application:start(iaas),
-
-    {pong,_,kubelet_server}=kubelet:ping(),
+     {pong,_,kubelet_server}=kubelet:ping(),
     ok.
 
 
