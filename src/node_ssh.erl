@@ -65,6 +65,7 @@ create_node(Alias,NodeName,Dir,Cookie)->
 			   {error,['failed to start', Node,Alias,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]};
 		       true->
 			   rpc:call(Node,os,cmd,["rm -rf "++Dir],5*1000),
+			   timer:sleep(1000),
 			   case rpc:call(Node,file,make_dir,[Dir],5*1000) of
 			       {error,Reason}->
 				   ?PrintLog(ticket,"Failed ",[Reason,Node,Alias,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]),
