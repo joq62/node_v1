@@ -189,14 +189,22 @@ code_change(_OldVsn, State, _Extra) ->
 %% Returns: non
 %% --------------------------------------------------------------------
 log_to_file(Info,LogFilesDir,LogFile)->
-    case filelib:is_dir(LogFilesDir) of
-	false->
-	    file:make_dir(LogFilesDir);
-	true ->
-	    ok
-    end,
-    write_info(Info,LogFilesDir,LogFile),
-    ok.
+    Result=case filelib:is_dir(LogFilesDir) of
+	       false->
+		   case file:make_dir(LogFilesDir) of
+		       {error,Reason}->
+			   {error,Reason};
+		       ok->
+			   write_info(Info,LogFilesDir,LogFile),
+			   ok
+		   end;
+	       true ->
+		   
+		   write_info(Info,LogFilesDir,LogFile),		   
+		   ok
+	   end,
+    
+    Result.
 
 
 write_info({Date,Time,Node,Type,Msg,InfoList},LogFilesDir,LogFile)->
