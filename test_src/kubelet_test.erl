@@ -31,17 +31,17 @@ start()->
     ok=setup(),
     io:format("~p~n",[{"Stop setup",?MODULE,?FUNCTION_NAME,?LINE}]),
 
-%    io:format("~p~n",[{"Start vm()",?MODULE,?FUNCTION_NAME,?LINE}]),
-%    ok=vm(),
-%    io:format("~p~n",[{"Stop vm()",?MODULE,?FUNCTION_NAME,?LINE}]),
+    io:format("~p~n",[{"Start worker()",?MODULE,?FUNCTION_NAME,?LINE}]),
+    ok=worker(),
+    io:format("~p~n",[{"Stop worker()",?MODULE,?FUNCTION_NAME,?LINE}]),
 
-    io:format("~p~n",[{"Start app()",?MODULE,?FUNCTION_NAME,?LINE}]),
-    ok=app(),
-    io:format("~p~n",[{"Stop app()",?MODULE,?FUNCTION_NAME,?LINE}]),
+%    io:format("~p~n",[{"Start app()",?MODULE,?FUNCTION_NAME,?LINE}]),
+%    ok=app(),
+%    io:format("~p~n",[{"Stop app()",?MODULE,?FUNCTION_NAME,?LINE}]),
 
-    io:format("~p~n",[{"Start node_ssh()",?MODULE,?FUNCTION_NAME,?LINE}]),
-    ok=node_ssh(),
-    io:format("~p~n",[{"Stop node_ssh)",?MODULE,?FUNCTION_NAME,?LINE}]),
+  %  io:format("~p~n",[{"Start node_ssh()",?MODULE,?FUNCTION_NAME,?LINE}]),
+  %  ok=node_ssh(),
+  %  io:format("~p~n",[{"Stop node_ssh)",?MODULE,?FUNCTION_NAME,?LINE}]),
 
   %  io:format("~p~n",[{"Start pass_0()",?MODULE,?FUNCTION_NAME,?LINE}]),
    % ok=pass_0(),
@@ -83,73 +83,33 @@ start()->
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% --------------------------------------------------------------------
-node_ssh()->
-    Alias="asus_varmdo",
-    HostName=net_adm:localhost(),
-    NodeName1= Name1="dep1_100_cl1_"++HostName,
-    Dir1="dep1_100_cl1_"++HostName++".deployment",
+
+%% --------------------------------------------------------------------
+%% Function:start/0 
+%% Description: Initiate the eunit tests, set upp needed processes etc
+%% Returns: non
+%% --------------------------------------------------------------------
+worker()->
+    HostId=net_adm:localhost(),
+    Name1="n1",
+    Dir1=Name1++".deployment",
     Cookie=atom_to_list(erlang:get_cookie()),
-    {ok,Node1}=kubelet:create_vm_ssh(Alias,NodeName1,Dir1,Cookie),
-
-    AppId="mymath",
-    kubelet:load_start_app(Node1,AppId,Dir1),
-    42=rpc:call(Node1,mymath,add,[20,22],10*1000),
-   % kubelet:delete_vm(Node1,Dir),
-   % {badrpc,nodedown}=rpc:call(Node1,mymath,add,[20,22],3*1000),
-    
-    ok.
-%% --------------------------------------------------------------------
-%% Function:start/0 
-%% Description: Initiate the eunit tests, set upp needed processes etc
-%% Returns: non
-%% --------------------------------------------------------------------
-app()->
-    
-    HostName=net_adm:localhost(),
-    Name1="dep1_100_cl1_"++HostName,
-    Dir1="dep1_100_cl1_"++HostName++".deployment",
-    NodeX=list_to_atom(Name1++"@"++HostName),
-    kubelet:delete_vm(NodeX,Dir1),
-
-    {ok,Node1}=kubelet:create_vm(Name1,Dir1),
-    D=date(),
-    D=rpc:call(Node1,erlang,date,[],3*1000),
-    AppId="mymath",
-    ok=case db_pod_spec:containers(AppId) of
-	   {error,Reason}->
-	       {error,Reason};
-	   [{AppId,AppVsn,GitPath,Env}]->
-	       kubelet:load_start_app(Node1,AppId,Dir1)
-       end,
-    42=rpc:call(Node1,mymath,add,[20,22],3*1000),
-
-    kubelet:stop_unload_app(Node1,AppId,Dir1),
-    42=rpc:call(Node1,mymath,add,[20,22],3*1000),
-    kubelet:delete_vm(Node1,Dir1),
-    {badrpc,nodedown}=rpc:call(Node1,mymath,add,[20,22],3*1000),
-    
-    
-    
+    Args1="-setcookie "++Cookie,
    
-
-    ok.
-
-%% --------------------------------------------------------------------
-%% Function:start/0 
-%% Description: Initiate the eunit tests, set upp needed processes etc
-%% Returns: non
-%% --------------------------------------------------------------------
-vm()->
-    
-    HostName=net_adm:localhost(),
-    Name1="dep1_100_cl1_"++HostName,
-    Dir1="dep1_100_cl1_"++HostName++".deployment",
-    {ok,Node1}=kubelet_lib:create_vm(Name1,Dir1),
+    {ok,Node1}=worker:create_pod(HostId,Name1,Dir1,Args1),
     D=date(),
     D=rpc:call(Node1,erlang,date,[],3*1000),
-    timer:sleep(3000),
-    ok=kubelet_lib:delete_vm(Node1,Dir1),
+    Pod1="mymath",
     
+    AppList=db_pod_spec:application_list(Pod1),
+    _Replicas=db_pod_spec:replicas(Pod1),
+    _HostList=db_pod_spec:host_list(Pod1),
+    [worker:load_start_application(Node1,Dir1,App,AppVsn,GitPath,Env)||{App,AppVsn,GitPath,Env}<-AppList],
+    42=rpc:call(Node1,mymath,add,[20,22],3*1000),
+    timer:sleep(10000),
+    ok=worker:delete_pod(Node1,Dir1),
+    
+    {badrpc,_}=rpc:call(Node1,erlang,date,[],3*1000),
     
 
     ok.
@@ -257,9 +217,9 @@ pass_5()->
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% --------------------------------------------------------------------
--define(APP,kubelet). 
+
 setup()->
-   
+    ok=etcd:start_init_mnesia(),
     ok.
 
 

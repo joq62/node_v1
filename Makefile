@@ -15,22 +15,14 @@ unit_test:
 #	interface
 	erlc -I ../interfaces -o test_ebin ../interfaces/*.erl;
 #	support
-	cp ../applications/support/src/*.app test_ebin;
 	erlc -I ../interfaces -o test_ebin ../kube_support/src/*.erl;
-	erlc -I ../interfaces -o test_ebin ../applications/support/src/*.erl;
 #	etcd
 	cp ../applications/etcd/src/*.app ebin;
 	erlc -I ../interfaces -o test_ebin ../kube_dbase/src/*.erl;
 	erlc -I ../interfaces -o test_ebin ../applications/etcd/src/*.erl;
-#	iaas
-	cp ../applications/iaas/src/*.app test_ebin;
-	erlc -I ../interfaces -o test_ebin ../kube_iaas/src/*.erl;
-	erlc -I ../interfaces -o test_ebin ../applications/iaas/src/*.erl;
-#	kube_pod
-#	erlc -I ../interfaces -o ebin ../kube_pod/src/*.erl;
 #	kubelet
-	cp ../applications/kubelet/src/*.app ebin;
-	erlc -I ../interfaces -o ebin ../applications/kubelet/src/*.erl;
+#	cp ../applications/kubelet/src/*.app ebin;
+#	erlc -I ../interfaces -o ebin ../applications/kubelet/src/*.erl;
 	erlc -I ../interfaces -o ebin src/*.erl;
 #	test application
 	cp test_src/*.app test_ebin;

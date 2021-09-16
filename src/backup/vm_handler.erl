@@ -4,7 +4,7 @@
 %%% 
 %%% Created : 10 dec 2012
 %%% --------------------------------------------------------------------
--module(node_ssh).   
+-module(vm_handler).   
    
 %% --------------------------------------------------------------------
 %% Include files
@@ -13,16 +13,56 @@
 %% --------------------------------------------------------------------
 
 % New final ?
-
+ 
 -export([
-	 create_node/4,
-	 load_start_app/3
+	 create_vm/7,
+	 create_slave/4,
+	 
+	 delelet_node/2
+	 
+	 load_start_app/6
 
 	]).
 
 %% ====================================================================
 %% External functions
 %% ====================================================================
+load_start_app(Node,Dir,AppId,_AppVsn,GitPath,Env)->
+    AppDir=filename:join(Dir,AppId),
+    Ebin=filename:join(AppDir,"ebin"),
+    App=list_to_atom(AppId),
+    Result=case rpc:call(Node,os,cmd,["rm -rf "++AppDir],5*1000) of
+	       {badrpc,Reason}->
+		   {error,[badrpc,Reason,Node,Dir,AppId,_AppVsn,GitPath,Env,
+			   ?FUNCTION_NAME,?MODULE,?LINE]};	       
+	       _->
+		   case rpc:call(Node,os,cmd,["git clone "++GitPath++" "++AppDir],10*1000) of
+		       {badrpc,Reason}->
+			   {error,[badrpc,Reason,Node,Dir,AppId,_AppVsn,GitPath,Env,
+				   ?FUNCTION_NAME,?MODULE,?LINE]};
+		       GitClone->
+			   case rpc:call(Node,application,set_env,[[{App,Env}]],5*1000) of
+			       {badrpc,Reason}->
+				   {error,[badrpc,Reason,Node,Dir,AppId,_AppVsn,GitPath,Env,
+					   ?FUNCTION_NAME,?MODULE,?LINE]};
+			       SetEnv->
+				   case rpc:call(Node,code,add_patha,[Ebin],5*1000) of
+				       {badrpc,Reason}->
+					   {error,[badrpc,Reason,Node,Dir,AppId,_AppVsn,GitPath,Env,
+						   ?FUNCTION_NAME,?MODULE,?LINE]};
+				       AddPath->
+					   case rpc:call(Node,application,start,[App],5*1000) of
+					       {badrpc,Reason}->
+						   {error,[badrpc,Reason,Node,Dir,AppId,_AppVsn,GitPath,Env,
+							   ?FUNCTION_NAME,?MODULE,?LINE]};
+					       AppStartResult->
+						   AppStartResult
+					   end
+				   end
+			   end
+		   end
+	   end,
+    Result.
 
 
 %% --------------------------------------------------------------------
@@ -31,13 +71,98 @@
 %% Returns: non
 %% --------------------------------------------------------------------
 
+create_slave(HostNode,NodeName,Dir,Cookie)->
+    Result=case rpc:call(HostNode,net_adm,localhost,[],5*1000) of
+	       {badrpc,Reason}->
+		   {error,[badrpc,Reason,HostNode,NodeName,Dir,Cookie,
+			   ?FUNCTION_NAME,?MODULE,?LINE]};
+	       Host->
+		   Args="-setcookie "++Cookie,
+		   case rpc:call(Host,NodeName,Args) of
+		       {badrpc,Reason}->
+			   {error,[badrpc,Reason,HostNode,NodeName,Dir,Cookie,
+				   ?FUNCTION_NAME,?MODULE,?LINE]};
+		       {error,Reason}->
+			   {error,[Reason,HostNode,NodeName,Dir,Cookie,
+				   ?FUNCTION_NAME,?MODULE,?LINE]};
+		       {ok,Node}->
+			   rpc:call(Node,os,cmd,["rm -rf "++Dir],5*1000),
+			   timer:sleep(100),
+			   case rpc:call(Node,file,make_dir,[Dir],5*1000) of
+			       {error,Reason}->
+				   ?PrintLog(ticket,"Failed ",[Reason,Node,Alias,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]),
+				   {error,[Reason,Node,Alias,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]};
+			       ok->
+				   ?PrintLog(log,"Started ",[Node,Alias,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]),
+				   {ok,Node}
+			   end
+		   end
+	   end,
+    Result.
+
+delete_vm(Node,Dir)->
+    rpc:call(Node,os,cmd,["rm -rf "++Dir],5*1000),
+    rpc:call(Node,init,stop,[],5*1000),		   
+    Result=case node_stopped(Node) of
+	       false->
+		   ?PrintLog(ticket,"Failed to stop node ",[Node,?FUNCTION_NAME,?MODULE,?LINE]),
+		   {error,["node not stopped",Node,?FUNCTION_NAME,?MODULE,?LINE]};
+	       true->
+		   ?PrintLog(log,"Stopped ",[Node,?FUNCTION_NAME,?MODULE,?LINE]),
+		   ok
+	   end,
+    Result.
+
+delete_slave(Node,Dir)->
+    rpc:call(Node,os,cmd,["rm -rf "++Dir],5*1000),
+    rpc:call(Node,init,stop,[],5*1000),		   
+    Result=case node_stopped(Node) of
+	       false->
+		   ?PrintLog(ticket,"Failed to stop node ",[Node,?FUNCTION_NAME,?MODULE,?LINE]),
+		   {error,["node not stopped",Node,?FUNCTION_NAME,?MODULE,?LINE]};
+	       true->
+		   ?PrintLog(log,"Stopped ",[Node,?FUNCTION_NAME,?MODULE,?LINE]),
+		   ok
+	   end,
+    Result.
+
 
 %% --------------------------------------------------------------------
 %% Function:start
 %% Description: List of test cases 
 %% Returns: non
 %% --------------------------------------------------------------------
-
+create_vm(Ip,SshPort,UId,Pwd,NodeName,Dir,Cookie)->
+    Node=list_to_atom(NodeName++"@"++HostId),
+		  
+    true=erlang:set_cookie(Node,list_to_atom(Cookie)),
+    true=erlang:set_cookie(node(),list_to_atom(Cookie)),
+    ok=stop_node(Node,Dir),
+    
+    ErlCmd="erl_call -s "++"-sname "++NodeName++" "++"-c "++Cookie,
+    SshCmd="nohup "++ErlCmd++" &",
+    ErlcCmdResult=rpc:call(node(),my_ssh,ssh_send,[Ip,SshPort,UId,Pwd,SshCmd,2*5000],3*5000),
+    Resul=case node_started(Node) of
+	      false->
+		  ?PrintLog(ticket,"Failed ",[Node,Alias,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]),
+		  {error,['failed to start', Node,Alias,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]};
+	      true->
+						% 
+		  {ok,Files}=rpc:call(Node,file,list_dir,["."],5*1000),
+		  DeplomentDirs=[File||File<-Files,
+				       ".deployment"==filename:extension(File)],
+		  [rpc:call(Node,os,cmd,["rm -rf "++DeplomentDir],5*1000)||DeplomentDir<-DeplomentDirs],
+		  timer:sleep(100),
+		  case rpc:call(Node,file,make_dir,[Dir],5*1000) of
+		      {error,Reason}->
+			  ?PrintLog(ticket,"Failed ",[Reason,Node,Alias,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]),
+			  {error,[Reason,Node,Alias,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]};
+		      ok->
+			  ?PrintLog(log,"Started ",[Node,Alias,NodeName,ErlcCmdResult,?FUNCTION_NAME,?MODULE,?LINE]),
+			  {ok,Node}
+		  end
+	  end,
+    Result.
 %% --------------------------------------------------------------------
 %% Function:start
 %% Description: List of test cases 
@@ -101,16 +226,7 @@ stop_node(Node,Dir)->
 %% Description: List of test cases 
 %% Returns: non
 %% --------------------------------------------------------------------
-load_start_app(Node,AppId,Dir)->
-    Result=case db_pod_spec:containers(AppId) of
-	       {error,Reason}->
-		   {error,Reason};
-	       [{AppId,AppVsn,GitPath,Env}]->
-		   kubelet_lib:load_start_app(Node,Dir,AppId,AppVsn,GitPath,Env)
-	   end,
-    Result.
-   
-    
+
 %% --------------------------------------------------------------------
 %% Function:start
 %% Description: List of test cases 
