@@ -29,7 +29,7 @@ unit_test:
 	erlc -I ../interfaces -o test_ebin test_src/*.erl;
 	erl -pa ebin -pa test_ebin\
 		-setcookie lgh_cookie\
-		-sname kubelet_lgh\
+		-sname test_node\
 		-unit_test monitor_node kubelet_lgh\
 		-unit_test cluster_id lgh\
 		-unit_test cookie lgh_cookie\

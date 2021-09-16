@@ -106,9 +106,9 @@ worker()->
     _HostList=db_pod_spec:host_list(Pod1),
     [worker:load_start_application(Node1,Dir1,App,AppVsn,GitPath,Env)||{App,AppVsn,GitPath,Env}<-AppList],
     42=rpc:call(Node1,mymath,add,[20,22],3*1000),
-    timer:sleep(10000),
-    ok=worker:delete_pod(Node1,Dir1),
+    timer:sleep(1000),
     
+    ok=worker:delete_pod(Node1,Dir1),
     {badrpc,_}=rpc:call(Node1,erlang,date,[],3*1000),
     
 

@@ -52,7 +52,8 @@ start()->
 
 setup()->
     ok=application:start(etcd),
- %   ok=application:start(kubelet),
+    ok=etcd:start_init_mnesia(),
+						%   ok=application:start(kubelet),
     {ok,_}=kubelet:start(),
     {pong,_,kubelet_server}=kubelet:ping(),
     ok.
