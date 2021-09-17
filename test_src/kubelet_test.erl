@@ -32,7 +32,7 @@ start()->
     io:format("~p~n",[{"Stop setup",?MODULE,?FUNCTION_NAME,?LINE}]),
 
     io:format("~p~n",[{"Start worker()",?MODULE,?FUNCTION_NAME,?LINE}]),
-    ok=worker(),
+ %   ok=worker(),
     io:format("~p~n",[{"Stop worker()",?MODULE,?FUNCTION_NAME,?LINE}]),
 
 %    io:format("~p~n",[{"Start app()",?MODULE,?FUNCTION_NAME,?LINE}]),
@@ -229,7 +229,7 @@ pass_5()->
 %% --------------------------------------------------------------------
 
 setup()->
-    ok=etcd:start_init_mnesia(),
+ %   ok=etcd:start_init_mnesia(),
     ok.
 
 
@@ -241,7 +241,7 @@ setup()->
 
 cleanup()->
   
-    application:stop(controller),
+%    application:stop(kubelet),
     ok.
 %% --------------------------------------------------------------------
 %% Function:start/0 

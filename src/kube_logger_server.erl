@@ -128,14 +128,17 @@ handle_cast({print_type,Type}, State) ->
     {noreply, State};
 
 handle_cast({log_msg,Info}, State) ->
- %  io:format("Info ~p~n",[Info]),
-    Monitor=sd:call(etcd,db_cluster_spec,monitor,[],5*1000),
-    rpc:cast(Monitor,monitor,print,[Info]),
-    
-    LogFilesDir=State#state.log_files_dir,
-    LogFile=State#state.log_file,
-    log_to_file(Info,LogFilesDir,LogFile),
-%    io:format("Info ~w~n",[Info]),
+    io:format("Info ~p~n",[Info]),
+    case sd:call(etcd,db_cluster_spec,monitor,[],5*1000) of
+	[]->
+	    io:format("error Monitor ~p~n",[[]]);
+	Monitor->
+	    rpc:cast(Monitor,monitor,print,[Info]),
+	    LogFilesDir=State#state.log_files_dir,
+	    LogFile=State#state.log_file,
+	    log_to_file(Info,LogFilesDir,LogFile)
+						%    io:format("Info ~w~n",[Info]),
+    end,
     {noreply, State};
 
 handle_cast(Msg, State) ->

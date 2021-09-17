@@ -51,10 +51,11 @@ start()->
 %% --------------------------------------------------------------------
 
 setup()->
-    ok=application:start(etcd),
-    ok=etcd:start_init_mnesia(),
+  %  ok=application:start(support),
+  %  ok=application:start(etcd),
+  %  ok=etcd:start_init_mnesia(),
     ok=application:start(kubelet),
-    {pong,_,kubelet_server}=kubelet:ping(),
+  %  {pong,_,kubelet_server}=kubelet:ping(),
     ok.
 
 

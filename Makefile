@@ -15,6 +15,8 @@ unit_test:
 #	interface
 	erlc -I ../interfaces -o ebin ../interfaces/*.erl;
 #	support
+	cp ../applications/support/src/*.app ebin;
+	erlc -I ../interfaces -o ebin ../applications/support/src/*.erl;
 	erlc -I ../interfaces -o ebin ../kube_support/src/*.erl;
 #	etcd
 	cp ../applications/etcd/src/*.app ebin;

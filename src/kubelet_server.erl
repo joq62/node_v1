@@ -64,7 +64,9 @@
 %
 %% --------------------------------------------------------------------
 init([]) ->
-    
+    ok=application:start(support),
+    ok=application:start(etcd),   
+    ok=etcd:start_init_mnesia(),
     {ok,_}=kube_logger:start(),
     ClusterId=sd:call(etcd,db_cluster_spec,cluster,[],5*1000),
     MonitorNode=sd:call(etcd,db_cluster_info,monitor,[],5*1000),
