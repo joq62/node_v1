@@ -83,7 +83,10 @@ start()->
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% --------------------------------------------------------------------
-
+% Kubelet inherit etcd and support ?
+% Share that path to slaves 
+%
+%
 %% --------------------------------------------------------------------
 %% Function:start/0 
 %% Description: Initiate the eunit tests, set upp needed processes etc
@@ -100,6 +103,13 @@ worker()->
     D=date(),
     D=rpc:call(Node1,erlang,date,[],3*1000),
     Pod1="mymath",
+    
+    % Add path to support and other common functions
+    ok=worker:add_path(Node1,"ebin"),
+    
+    {"n1","joq62-X550CA"}=rpc:call(Node1,misc_node,vmid_hostid,[Node1],1*1000),
+    
+    
     
     AppList=db_pod_spec:application_list(Pod1),
     _Replicas=db_pod_spec:replicas(Pod1),

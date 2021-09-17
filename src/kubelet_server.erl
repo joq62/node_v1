@@ -27,8 +27,7 @@
 %% --------------------------------------------------------------------
 %% Definitions 
 %% --------------------------------------------------------------------
--define(KubeleId,0).
--define(NumWorkerPods,10).
+
 %% --------------------------------------------------------------------
 %% Function: available_hosts()
 %% Description: Based on hosts.config file checks which hosts are avaible
@@ -69,13 +68,8 @@ init([]) ->
     {ok,_}=kube_logger:start(),
     ClusterId=sd:call(etcd,db_cluster_spec,cluster,[],5*1000),
     MonitorNode=sd:call(etcd,db_cluster_info,monitor,[],5*1000),
-
     ?PrintLog(log,"Successful starting of server",[?MODULE]),
-%    ok=rpc:call(node(),kubelet_lib,scratch,[],10*1000),
-  %  CreateResult=pod:create_pods(?NumWorkerPods),
-  %  ActivePods=[Pod||{ok,Pod}<-CreateResult],
- %   ClusterId=glurk,
- %   MonitorNode=glurk2,
+
     {ok, #state{cluster_id=ClusterId,
 		monitor_node=MonitorNode,
 		pods=[]}}.

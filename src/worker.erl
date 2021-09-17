@@ -15,6 +15,7 @@
 % New final ?
  
 -export([
+	 add_path/2,
 	 create_pod/4,
 	 delete_pod/2,
 	 load_start_application/6
@@ -59,6 +60,23 @@ create_pod(HostId,NodeName,Dir,Args)->
 %% Description: List of test cases 
 %% Returns: non
 %% --------------------------------------------------------------------
+add_path(Node,EbinPath)->
+    Result= case rpc:call(Node,code,add_patha,[EbinPath],5*1000) of
+		{badrpc,Reason}->
+		    {error,[badrpc,Reason,Node,EbinPath,
+			    ?FUNCTION_NAME,?MODULE,?LINE]};
+		{error, bad_directory}->
+		    {error,[bad_directory,Node,EbinPath,
+			    ?FUNCTION_NAME,?MODULE,?LINE]}; 
+		true->
+		    ok
+	    end,
+    Result.
+%% --------------------------------------------------------------------
+%% Function:start
+%% Description: List of test cases 
+%% Returns: non
+%% --------------------------------------------------------------------
 load_start_application(Node,Dir,App,_AppVsn,GitPath,Env)->
     AppId=atom_to_list(App),  
     AppDir=filename:join(Dir,AppId),
@@ -80,11 +98,11 @@ load_start_application(Node,Dir,App,_AppVsn,GitPath,Env)->
 				   {error,[badrpc,Reason,Node,Dir,AppId,_AppVsn,GitPath,Env,
 					   ?FUNCTION_NAME,?MODULE,?LINE]};
 			       _SetEnv->
-				   case rpc:call(Node,code,add_patha,[Ebin],5*1000) of
-				       {badrpc,Reason}->
-					   {error,[badrpc,Reason,Node,Dir,AppId,_AppVsn,GitPath,Env,
+				   case add_path(Node,Ebin) of
+				       {error,Reason}->
+					   {error,[Reason,Node,Dir,AppId,_AppVsn,GitPath,Env,
 						   ?FUNCTION_NAME,?MODULE,?LINE]};
-				       _AddPath->
+				       ok->
 					   case rpc:call(Node,application,start,[App],5*1000) of
 					       {badrpc,Reason}->
 						   {error,[badrpc,Reason,Node,Dir,AppId,_AppVsn,GitPath,Env,

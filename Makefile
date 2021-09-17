@@ -13,16 +13,16 @@ unit_test:
 	rm -rf *_specs *_config *.log *_pod*;
 	mkdir test_ebin;
 #	interface
-	erlc -I ../interfaces -o test_ebin ../interfaces/*.erl;
+	erlc -I ../interfaces -o ebin ../interfaces/*.erl;
 #	support
-	erlc -I ../interfaces -o test_ebin ../kube_support/src/*.erl;
+	erlc -I ../interfaces -o ebin ../kube_support/src/*.erl;
 #	etcd
 	cp ../applications/etcd/src/*.app ebin;
-	erlc -I ../interfaces -o test_ebin ../kube_dbase/src/*.erl;
-	erlc -I ../interfaces -o test_ebin ../applications/etcd/src/*.erl;
+	erlc -I ../interfaces -o ebin ../kube_dbase/src/*.erl;
+	erlc -I ../interfaces -o ebin ../applications/etcd/src/*.erl;
 #	kubelet
-#	cp ../applications/kubelet/src/*.app ebin;
-#	erlc -I ../interfaces -o ebin ../applications/kubelet/src/*.erl;
+	cp ../applications/kubelet/src/*.app ebin;
+	erlc -I ../interfaces -o ebin ../applications/kubelet/src/*.erl;
 	erlc -I ../interfaces -o ebin src/*.erl;
 #	test application
 	cp test_src/*.app test_ebin;
